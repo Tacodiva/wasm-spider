@@ -1,0 +1,20 @@
+{
+    "compilerOptions": {
+        "target": "ES2015",
+        "lib": [
+            "ES2015",
+            "ES2016",
+            "ES2017"
+        ],
+        "strict": true,
+        "esModuleInterop": true,
+        "declaration": true,
+        "outDir": "dist",
+        "module": "ES2015",
+        "moduleResolution": "node",
+    },
+    "exclude": [
+        "dist",
+        "node_modules"
+    ]
+}
