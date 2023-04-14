@@ -75,13 +75,13 @@ export class BinaryWriter {
 
     public writeF64(float: number) {
         this._checkBuffer(8);
-        this._bufferView.setFloat64(this.position, float);
+        this._bufferView.setFloat64(this.position, float, true);
         this.position += 8;
     }
 
     public writeF32(float: number) {
         this._checkBuffer(4);
-        this._bufferView.setFloat32(this.position, float);
+        this._bufferView.setFloat32(this.position, float, true);
         this.position += 4;
     }
 

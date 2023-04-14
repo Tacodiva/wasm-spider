@@ -1,6 +1,6 @@
 import { SpiderExport, SpiderExportFunction } from "./SpiderExport";
 import { SpiderFunction } from "./SpiderFunction";
-import { SpiderInstructions } from "./SpiderInstructions";
+import { InstrList } from "./InstrList";
 import { SpiderType } from "./SpiderType";
 import { WasmExportType, WasmValueType } from "./enums";
 
@@ -24,7 +24,7 @@ export class SpiderModule {
     public createFunction(
         type?: SpiderType | { parameters?: WasmValueType[], results?: WasmValueType[] },
         locals: WasmValueType[] = [],
-        body: SpiderInstructions = new SpiderInstructions()) {
+        body: InstrList = new InstrList()) {
         let spiderType;
         if (type instanceof SpiderType)
             spiderType = type;

@@ -16,7 +16,7 @@ export namespace spider {
     export const writeModule = function (module: SpiderModule): ArrayBuffer {
         const writer = new WasmWriter();
         writer.writeModule(module);
-        return writer.toBuffer();
+        return writer.toBuffer().buffer;
     }
 
     export const compileModule = function (module: SpiderModule): Promise<WebAssembly.Module> {

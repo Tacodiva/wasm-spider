@@ -1,15 +1,16 @@
 import { BinaryWriter } from "./BinaryWriter";
 import { SpiderFunction } from "./SpiderFunction";
 import { ISpiderInstr, OpcodeInstArgMapValues, OpcodeInstArgMap } from "./SpiderInstruction";
-import { SpiderInstructions } from "./SpiderInstructions";
+import { InstrList } from "./InstrList";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
-import { WasmExportType, WasmOpcode } from "./enums";
+import { WasmExportType, WasmOpcode, WasmValueType } from "./enums";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
 
 const WASM_FUNCTYPE = 0x60;
+const WASM_RESULT_TYPE_VOID = 0x40;
 
 const enum WasmSectionType {
     custom = 0,
@@ -26,18 +27,37 @@ const enum WasmSectionType {
     data = 11,
 }
 
-const WASM_OPCODE_END = 0x0b;
+const enum WasmBlockOpcode {
+    else = 0x05,
+    end = 0x0b
+}
 
 type WasmInstWriter<T extends WasmOpcode> =
     (writer: WasmWriter, opcode: T, ...args: OpcodeInstArgMap[T]) => void;
 
-const wasmInstructionUint32Param = function (writer: WasmWriter, opcode: WasmOpcode, value: number) {
-    writer.writeSLEB128(value);
-}
+const wasmInstructionUint32Param =
+    (writer: WasmWriter, _: WasmOpcode, value: number) => writer.writeSLEB128(value);
 
 const WasmInstuctionWriters = {
-    [WasmOpcode.i32_const]: wasmInstructionUint32Param,
-    [WasmOpcode.local_get]: wasmInstructionUint32Param
+    [WasmOpcode.block]: (writer, _, instr, blocktype) => writer.writeBlock(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
+    [WasmOpcode.loop]: (writer, _, instr, blocktype) => writer.writeBlock(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
+    [WasmOpcode.if]: (writer, _, instrTrue, instrFalse, blocktype) => {
+        if (instrFalse) {
+            writer.writeBlock(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID, WasmBlockOpcode.else);
+            writer.writeBlock(instrFalse);
+        } else {
+            writer.writeBlock(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID);
+        }
+    },
+
+    [WasmOpcode.i32_const]: (writer, _, n) => writer.writeSLEB128(n),
+    [WasmOpcode.i64_const]: (writer, _, n) => writer.writeSLEB128(n),
+    [WasmOpcode.f32_const]: (writer, _, z) => writer.writeF32(z),
+    [WasmOpcode.f64_const]: (writer, _, z) => writer.writeF64(z),
+
+    [WasmOpcode.local_get]: wasmInstructionUint32Param,
+    [WasmOpcode.local_set]: wasmInstructionUint32Param,
+    [WasmOpcode.local_tee]: wasmInstructionUint32Param
 } satisfies {
         [K in keyof OpcodeInstArgMapValues]: WasmInstWriter<K>
     } as {
@@ -143,8 +163,7 @@ export class WasmWriter extends BinaryWriter {
                     codeWriter.writeUint8(func.locals[i]);
                 }
 
-                codeWriter.writeInstructions(func.body);
-                codeWriter.writeUint8(WASM_OPCODE_END);
+                codeWriter.writeBlock(func.body);
 
                 sectionWriter.writeULEB128(codeWriter.position);
                 sectionWriter.write(codeWriter.toBuffer());
@@ -153,7 +172,13 @@ export class WasmWriter extends BinaryWriter {
         }
     }
 
-    public writeInstructions(expr: SpiderInstructions) {
+    public writeBlock(expr: InstrList, type?: WasmValueType | typeof WASM_RESULT_TYPE_VOID, terminator: WasmBlockOpcode = WasmBlockOpcode.end) {
+        if (type !== undefined) this.writeUint8(type);
+        this.writeInstructions(expr);
+        this.writeUint8(terminator);
+    }
+
+    public writeInstructions(expr: InstrList) {
         for (const inst of expr.instructions)
             this.writeInstruction(inst);
     }
@@ -163,7 +188,7 @@ export class WasmWriter extends BinaryWriter {
             throw new Error("Not currently writing a module");
         this.writeUint8(inst.opcode);
         const writer = WasmInstuctionWriters[inst.opcode] as WasmInstWriter<T> | undefined;
-        if (writer) (writer as any)(this, inst.opcode, inst.args);
+        if (writer) writer(this, inst.opcode, ...inst.args);
     }
 
     public writeName(value: string) {

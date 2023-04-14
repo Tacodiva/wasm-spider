@@ -18,7 +18,6 @@ export enum WasmOpcode {
     block = 0x02,
     loop = 0x03,
     if = 0x04,
-    else = 0x05,
     br = 0x0c,
     br_if = 0x0d,
     br_table = 0x0e,
