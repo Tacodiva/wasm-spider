@@ -269,6 +269,13 @@ export class WasmWriter extends BinaryWriter {
             endSection();
         }
 
+        if (module.start !== null) {
+            // Write the start section
+            startSection(WasmSectionType.start);
+            sectionWriter.writeFunctionIndex(module.start);
+            endSection();
+        }
+
         if (module.functions.length !== 0) {
             // Write the code section
             startSection(WasmSectionType.code);

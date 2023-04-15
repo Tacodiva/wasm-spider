@@ -19,6 +19,7 @@ export class SpiderModule {
     public readonly imports: SpiderImport[];
     public readonly globals: SpiderGlobal[];
     public readonly memories: SpiderMemory[];
+    public start: SpiderFunction | null;
 
     public constructor() {
         this.types = [];
@@ -27,6 +28,7 @@ export class SpiderModule {
         this.imports = [];
         this.globals = [];
         this.memories = [];
+        this.start = null;
     }
 
     public createType(parameters: WasmValueType[] = [], ...results: WasmValueType[]): SpiderType {
