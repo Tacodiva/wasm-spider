@@ -1,17 +1,16 @@
-import { InstrList } from "./InstrList";
+import { SpiderExpression } from "./SpiderExpression";
 import { SpiderFunction } from "./SpiderFunction";
-import { SpiderImportGlobal, SpiderImportTable } from "./SpiderImport";
 import { LocalReference } from "./LocalReference";
 import { WasmOpcode, WasmValueType } from "./enums";
-import { SpiderGlobal, SpiderGlobalDefinition } from "./SpiderGlobal";
+import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderMemory } from "./SpiderMemory";
 import { SpiderTypeDefinition } from "./SpiderType";
-import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
+import { SpiderTable } from "./SpiderTable";
 
 export type OpcodeInstArgMapValues = {
-    [WasmOpcode.block]: [instr: InstrList, blocktype?: WasmValueType],
-    [WasmOpcode.loop]: [instr: InstrList, blocktype?: WasmValueType],
-    [WasmOpcode.if]: [instrTrue: InstrList, instrFalse?: InstrList, blocktype?: WasmValueType],
+    [WasmOpcode.block]: [instr: SpiderExpression, blocktype?: WasmValueType],
+    [WasmOpcode.loop]: [instr: SpiderExpression, blocktype?: WasmValueType],
+    [WasmOpcode.if]: [instrTrue: SpiderExpression, instrFalse?: SpiderExpression, blocktype?: WasmValueType],
     [WasmOpcode.call]: [func: SpiderFunction],
     [WasmOpcode.call_indirect]: [type: SpiderTypeDefinition, table: SpiderTable],
 
@@ -57,7 +56,7 @@ export type OpcodeInstArgMap = {
     [T in WasmOpcode]: T extends keyof OpcodeInstArgMapValues ? OpcodeInstArgMapValues[T] : [];
 };
 
-export interface ISpiderInstr<T extends WasmOpcode = WasmOpcode> {
+export interface SpiderInstruction<T extends WasmOpcode = WasmOpcode> {
     readonly opcode: T;
     readonly args: OpcodeInstArgMap[T];
 }

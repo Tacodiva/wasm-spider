@@ -15,7 +15,7 @@ test('Globals', async () => {
 
     const importedGlobal = spiderModule.importGlobal("test", "global", WasmValueType.f64, true);
 
-    expect(moduleGlobal.getValue()).toEqual(60);
+    expect(moduleGlobal.value.getAsNumber()).toEqual(60);
 
     addFunction.body.emit(WasmOpcode.global_get, importedGlobal);
     addFunction.body.emit(WasmOpcode.global_get, moduleGlobal);

@@ -1,5 +1,5 @@
 import { WasmOpcode, WasmValueType, spider } from "../src";
-import { InstrList } from "../src/InstrList";
+import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
 
 test('Simple Variable Refs + ifelse', async () => {

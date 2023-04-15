@@ -1,13 +1,14 @@
 import { SpiderExport, SpiderExportFunction, SpiderExportGlobal, SpiderExportMemory, SpiderExportTable } from "./SpiderExport";
 import { SpiderFunction, SpiderFunctionDefinition } from "./SpiderFunction";
-import { InstrList } from "./InstrList";
+import { SpiderExpression } from "./SpiderExpression";
 import { SpiderTypeDefinition } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmValueType } from "./enums";
 import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
-import { SpiderGlobalDefinition } from "./SpiderGlobal";
+import { SpiderGlobal, SpiderGlobalDefinition } from "./SpiderGlobal";
 import { SpiderMemoryDefinition } from "./SpiderMemory";
 import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 import { SpiderElement, SpiderElementDefinition } from "./SpiderElement";
+import { SpiderConstExpression } from "./SpiderConstExpression";
 
 interface SpiderTypeDesc {
     parameters?: WasmValueType[];
@@ -55,7 +56,7 @@ export class SpiderModule {
     public createFunction(
         type?: SpiderTypeDefinition | SpiderTypeDesc,
         vars: WasmValueType[] = [],
-        body: InstrList = new InstrList()) {
+        body: SpiderExpression = new SpiderExpression()) {
         const func = new SpiderFunctionDefinition(this, this._getOrCreateType(type), vars, body);
         this.functions.push(func);
         return func;
@@ -68,19 +69,19 @@ export class SpiderModule {
     }
 
     public importFunction(module: string, name: string, type: SpiderTypeDefinition | SpiderTypeDesc): SpiderImportFunction {
-        const imprt: SpiderImportFunction = { importType: WasmImportType.func, name, module, functionType: this._getOrCreateType(type) };
+        const imprt: SpiderImportFunction = { importType: WasmImportType.func, name, module, type: this._getOrCreateType(type) };
         this.imports.push(imprt);
         return imprt;
     }
 
-    public createGlobal(type: WasmValueType, mutable: boolean, value: number): SpiderGlobalDefinition {
+    public createGlobal(type: WasmValueType, mutable: boolean, value: number | SpiderConstExpression | SpiderGlobal): SpiderGlobalDefinition {
         const global = new SpiderGlobalDefinition(this, type, mutable, value);
         this.globals.push(global);
         return global;
     }
 
     public importGlobal(module: string, name: string, type: WasmValueType, mutable: boolean): SpiderImportGlobal {
-        const imprt: SpiderImportGlobal = { importType: WasmImportType.global, name, module, globalType: type, globalMutable: mutable };
+        const imprt: SpiderImportGlobal = { importType: WasmImportType.global, name, module, type: type, mutable: mutable };
         this.imports.push(imprt);
         return imprt;
     }
@@ -98,7 +99,7 @@ export class SpiderModule {
     }
 
     public importMemory(module: string, name: string, minSize: number = 0, maxSize?: number): SpiderImportMemory {
-        const imprt: SpiderImportMemory = { importType: WasmImportType.mem, name, module, memoryMinSize: minSize, memoryMaxSize: maxSize };
+        const imprt: SpiderImportMemory = { importType: WasmImportType.mem, name, module, minSize: minSize, maxSize: maxSize };
         this.imports.push(imprt);
         return imprt;
     }
@@ -116,7 +117,7 @@ export class SpiderModule {
     }
 
     public importTable(module: string, name: string, minSize: number, maxSize?: number): SpiderImportTable {
-        const imprt: SpiderImportTable = { importType: WasmImportType.table, name, module, tableMinSize: minSize, tableMaxSize: maxSize };
+        const imprt: SpiderImportTable = { importType: WasmImportType.table, name, module, minSize: minSize, maxSize: maxSize };
         this.imports.push(imprt);
         return imprt;
     }
@@ -129,9 +130,9 @@ export class SpiderModule {
 
     public createElement(
         table: SpiderTable,
-        offsetExpr: InstrList = new InstrList(),
+        offset: number | SpiderConstExpression | SpiderGlobal,
         functions: SpiderFunction[] = []) {
-        const element = new SpiderElementDefinition(this, table, offsetExpr, functions);
+        const element = new SpiderElementDefinition(this, table, offset, functions);
         this.elements.push(element);
         return element;
     }

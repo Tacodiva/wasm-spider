@@ -1,5 +1,5 @@
 import { WasmOpcode, WasmValueType, spider } from "../src";
-import { InstrList } from "../src/InstrList";
+import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
 
 test('Simple If', async () => {
@@ -14,7 +14,7 @@ test('Simple If', async () => {
         results: [WasmValueType.f64]
     });
 
-    const ret7729 = new InstrList();
+    const ret7729 = new SpiderExpression();
 
     addFunction.body.emit(WasmOpcode.local_get, 0); // Push the first param onto the stack
     addFunction.body.emit(WasmOpcode.f64_const, 0);

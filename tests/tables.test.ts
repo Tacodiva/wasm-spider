@@ -1,5 +1,5 @@
 import { SpiderImportTable, SpiderModule, SpiderTable, WasmOpcode, WasmValueType, spider } from "../src";
-import { InstrList } from "../src/InstrList";
+import { SpiderExpression } from "../src/SpiderExpression";
 
 describe("Tables", () => {
     function poppulateModule(spiderModule: SpiderModule, table: SpiderTable) {
@@ -21,8 +21,7 @@ describe("Tables", () => {
         subtractFunction.body.emit(WasmOpcode.local_get, 1);
         subtractFunction.body.emit(WasmOpcode.f64_sub);
 
-        const element = spiderModule.createElement(table, new InstrList(), [addFunction, subtractFunction]);
-        element.offsetExpr.emitConstant(WasmValueType.i32, 0);
+        spiderModule.createElement(table, 0, [addFunction, subtractFunction]);
 
         const multiFunction = spiderModule.createFunction({
             parameters: [WasmValueType.i32, WasmValueType.f64, WasmValueType.f64],

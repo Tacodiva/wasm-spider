@@ -10,25 +10,25 @@ interface SpiderImportBase {
 
 export interface SpiderImportFunction extends SpiderImportBase {
     importType: WasmImportType.func,
-    functionType: SpiderTypeDefinition
+    type: SpiderTypeDefinition
 }
 
 export interface SpiderImportGlobal extends SpiderImportBase {
     importType: WasmImportType.global,
-    globalType: WasmValueType,
-    globalMutable: boolean
+    type: WasmValueType,
+    mutable: boolean
 }
 
 export interface SpiderImportMemory extends SpiderImportBase {
     importType: WasmImportType.mem,
-    memoryMinSize: number,
-    memoryMaxSize: number | undefined
+    minSize: number,
+    maxSize: number | undefined
 }
 
 export interface SpiderImportTable extends SpiderImportBase {
     importType: WasmImportType.table,
-    tableMinSize: number,
-    tableMaxSize: number | undefined
+    minSize: number,
+    maxSize: number | undefined
 }
 
 export type SpiderImport = SpiderImportFunction | SpiderImportGlobal | SpiderImportMemory | SpiderImportTable;

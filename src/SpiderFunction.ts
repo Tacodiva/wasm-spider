@@ -1,4 +1,4 @@
-import { InstrList } from "./InstrList";
+import { SpiderExpression } from "./SpiderExpression";
 import { LocalParameterReference, LocalVariableReference, MutableLocalVariableReference, LocalReferenceType } from "./LocalReference";
 import { SpiderImportFunction } from "./SpiderImport";
 import { SpiderModule } from "./SpiderModule";
@@ -10,7 +10,7 @@ export type SpiderFunction = SpiderFunctionDefinition | SpiderImportFunction;
 export class SpiderFunctionDefinition {
     public readonly module: SpiderModule;
 
-    public readonly body: InstrList;
+    public readonly body: SpiderExpression;
 
     private readonly _localVariables: WasmValueType[];
     public get localVariables(): readonly WasmValueType[] { return this._localVariables; }
@@ -20,7 +20,7 @@ export class SpiderFunctionDefinition {
     public get parameters(): readonly WasmValueType[] { return this.type.parameters; }
     public get results(): readonly WasmValueType[] { return this.type.results; }
 
-    public constructor(module: SpiderModule, type: SpiderTypeDefinition, vars: WasmValueType[] = [], body: InstrList = new InstrList()) {
+    public constructor(module: SpiderModule, type: SpiderTypeDefinition, vars: WasmValueType[] = [], body: SpiderExpression = new SpiderExpression()) {
         this.module = module;
         this.type = type;
         this._localVariables = vars;

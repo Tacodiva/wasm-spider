@@ -1,7 +1,7 @@
 import { BinaryWriter } from "./BinaryWriter";
 import { SpiderFunction, SpiderFunctionDefinition } from "./SpiderFunction";
-import { ISpiderInstr, OpcodeInstArgMapValues, OpcodeInstArgMap } from "./SpiderInstruction";
-import { InstrList } from "./InstrList";
+import { SpiderInstruction, OpcodeInstArgMapValues, OpcodeInstArgMap } from "./SpiderInstruction";
+import { SpiderExpression } from "./SpiderExpression";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType, SpiderTypeDefinition } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
@@ -48,14 +48,14 @@ const wasmInstructionMemarg =
     }
 
 const WasmInstuctionWriters = {
-    [WasmOpcode.block]: (writer, _, instr, blocktype) => writer.writeBlock(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
-    [WasmOpcode.loop]: (writer, _, instr, blocktype) => writer.writeBlock(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
+    [WasmOpcode.block]: (writer, _, instr, blocktype) => writer.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
+    [WasmOpcode.loop]: (writer, _, instr, blocktype) => writer.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
     [WasmOpcode.if]: (writer, _, instrTrue, instrFalse, blocktype) => {
         if (instrFalse) {
-            writer.writeBlock(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID, WasmBlockOpcode.else);
-            writer.writeBlock(instrFalse);
+            writer.writeExpression(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID, WasmBlockOpcode.else);
+            writer.writeExpression(instrFalse);
         } else {
-            writer.writeBlock(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID);
+            writer.writeExpression(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID);
         }
     },
     [WasmOpcode.call]: (writer, _, func) => writer.writeFunctionIndex(func),
@@ -211,18 +211,18 @@ export class WasmWriter extends BinaryWriter {
                 sectionWriter.writeUint8(imprt.importType);
                 switch (imprt.importType) {
                     case WasmImportType.func:
-                        sectionWriter.writeTypeIndex(imprt.functionType);
+                        sectionWriter.writeTypeIndex(imprt.type);
                         break;
                     case WasmImportType.global:
-                        sectionWriter.writeUint8(imprt.globalType);
-                        sectionWriter.writeBoolean(imprt.globalMutable);
+                        sectionWriter.writeUint8(imprt.type);
+                        sectionWriter.writeBoolean(imprt.mutable);
                         break;
                     case WasmImportType.mem:
-                        sectionWriter.writeLimits(imprt.memoryMinSize, imprt.memoryMaxSize);
+                        sectionWriter.writeLimits(imprt.minSize, imprt.maxSize);
                         break;
                     case WasmImportType.table:
                         sectionWriter.writeUint8(WASM_TABLE_TYPE_ANY);
-                        sectionWriter.writeLimits(imprt.tableMinSize, imprt.tableMaxSize);
+                        sectionWriter.writeLimits(imprt.minSize, imprt.maxSize);
                         break;
                 }
             }
@@ -266,7 +266,7 @@ export class WasmWriter extends BinaryWriter {
             for (const global of module.globals) {
                 sectionWriter.writeUint8(global.type);
                 sectionWriter.writeBoolean(global.mutable);
-                sectionWriter.writeBlock(global.initalizer);
+                sectionWriter.writeExpression(global.value);
             }
             endSection();
         }
@@ -309,7 +309,7 @@ export class WasmWriter extends BinaryWriter {
             sectionWriter.writeULEB128(module.elements.length);
             for (const element of module.elements) {
                 sectionWriter.writeTableIndex(element.table);
-                sectionWriter.writeBlock(element.offsetExpr);
+                sectionWriter.writeExpression(element.offset);
                 sectionWriter.writeULEB128(element.functions.length);
                 for (const func of element.functions)
                     sectionWriter.writeFunctionIndex(func);
@@ -333,7 +333,7 @@ export class WasmWriter extends BinaryWriter {
                     codeWriter.writeUint8(func.localVariables[i]);
                 }
 
-                codeWriter.writeBlock(func.body);
+                codeWriter.writeExpression(func.body);
 
                 sectionWriter.writeULEB128(codeWriter.position);
                 sectionWriter.write(codeWriter.toBuffer());
@@ -342,18 +342,14 @@ export class WasmWriter extends BinaryWriter {
         }
     }
 
-    public writeBlock(expr: InstrList, type?: WasmValueType | typeof WASM_RESULT_TYPE_VOID, terminator: WasmBlockOpcode = WasmBlockOpcode.end) {
+    public writeExpression(expr: SpiderExpression, type?: WasmValueType | typeof WASM_RESULT_TYPE_VOID, terminator: WasmBlockOpcode = WasmBlockOpcode.end) {
         if (type !== undefined) this.writeUint8(type);
-        this.writeInstructions(expr);
-        this.writeUint8(terminator);
-    }
-
-    public writeInstructions(expr: InstrList) {
         for (const inst of expr.instructions)
             this.writeInstruction(inst);
+        this.writeUint8(terminator);
     }
-
-    public writeInstruction<T extends WasmOpcode>(inst: ISpiderInstr<T>) {
+    
+    public writeInstruction<T extends WasmOpcode>(inst: SpiderInstruction<T>) {
         if (this._module == null)
             throw new Error("Not currently writing a module");
         this.writeUint8(inst.opcode);
@@ -393,22 +389,22 @@ export class WasmWriter extends BinaryWriter {
         return id;
     }
 
-    public writeTypeIndex(type: SpiderTypeDefinition) {
+    public writeTypeIndex(type: SpiderType) {
         this.writeULEB128(this.getTypeIndex(type));
     }
 
-    public getTypeIndex(type: SpiderTypeDefinition): number {
+    public getTypeIndex(type: SpiderType): number {
         if (!this._typeIndexes) throw new Error("Type indexes not allocated.");
         const id = this._typeIndexes.get(type);
         if (id === undefined) throw new Error("Type not a part of the module.");
         return id;
     }
 
-    public writeGlobalIndex(global: SpiderGlobalDefinition | SpiderImportGlobal) {
+    public writeGlobalIndex(global: SpiderGlobal) {
         this.writeULEB128(this.getGlobalIndex(global));
     }
 
-    public getGlobalIndex(global: SpiderGlobalDefinition | SpiderImportGlobal): number {
+    public getGlobalIndex(global: SpiderGlobal): number {
         if (!this._globalIndexes) throw new Error("Global indexes not allocated.");
         const id = this._globalIndexes.get(global);
         if (id === undefined) throw new Error("Global not a part of the module.");
