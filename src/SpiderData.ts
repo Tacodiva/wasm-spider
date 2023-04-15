@@ -4,7 +4,9 @@ import { SpiderMemory } from "./SpiderMemory";
 import { SpiderModule } from "./SpiderModule";
 import { WasmValueType } from "./enums";
 
-export class SpiderData {
+export type SpiderData = SpiderDataDefinition;
+
+export class SpiderDataDefinition {
 
     public readonly module: SpiderModule;
 

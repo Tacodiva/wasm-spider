@@ -1,15 +1,14 @@
 import { BinaryWriter } from "./BinaryWriter";
-import { SpiderFunction, SpiderFunctionDefinition } from "./SpiderFunction";
+import { SpiderFunction } from "./SpiderFunction";
 import { SpiderInstruction, OpcodeInstArgMapValues, OpcodeInstArgMap } from "./SpiderInstruction";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderModule } from "./SpiderModule";
-import { SpiderType, SpiderTypeDefinition } from "./SpiderType";
-import { WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
-import { SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
+import { SpiderType } from "./SpiderType";
+import { SpiderCustomSectionPosition, WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
 import { LocalReference, LocalReferenceType } from "./LocalReference";
-import { SpiderGlobal, SpiderGlobalDefinition } from "./SpiderGlobal";
-import { SpiderMemory, SpiderMemoryDefinition } from "./SpiderMemory";
-import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
+import { SpiderGlobal } from "./SpiderGlobal";
+import { SpiderMemory } from "./SpiderMemory";
+import { SpiderTable } from "./SpiderTable";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
@@ -190,6 +189,19 @@ export class WasmWriter extends BinaryWriter {
         this.writeUint32(WASM_MAGIC);
         this.writeUint32(WASM_VERSION);
 
+        const writeCustomSections = (position: SpiderCustomSectionPosition) => {
+            const sections = module.customSections[position];
+            if (!sections) return;
+            for (const section of sections) {
+                startSection(WasmSectionType.custom);
+                sectionWriter.writeName(section.name);
+                sectionWriter.write(section.buffer);
+                endSection();
+            }
+        };
+
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_HEADER);
+
         if (module.types.length !== 0) {
             // Write the type section
             startSection(WasmSectionType.type);
@@ -207,6 +219,7 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_TYPE);
 
         if (module.imports.length !== 0) {
             // Write the imports section
@@ -235,6 +248,7 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_IMPORT);
 
         if (module.functions.length !== 0) {
             // Write the function section
@@ -244,6 +258,7 @@ export class WasmWriter extends BinaryWriter {
                 sectionWriter.writeTypeIndex(func.type);
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_FUNCTION);
 
         if (module.tables.length !== 0) {
             // Write the table section
@@ -255,6 +270,7 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_TABLE);
 
         if (module.memories.length !== 0) {
             // Write the memories section
@@ -265,6 +281,7 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_MEMORY);
 
         if (module.globals.length !== 0) {
             // Write the global section
@@ -277,6 +294,7 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_GLOBAL);
 
         if (module.exports.length !== 0) {
             // Write the export section
@@ -302,6 +320,7 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_EXPORT);
 
         if (module.start !== null) {
             // Write the start section
@@ -309,6 +328,7 @@ export class WasmWriter extends BinaryWriter {
             sectionWriter.writeFunctionIndex(module.start);
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_START);
 
         if (module.elements.length !== 0) {
             // Write the elements section
@@ -323,19 +343,7 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
-        
-        if (module.data.length !== 0) {
-            // Write the data section
-            startSection(WasmSectionType.data);
-            sectionWriter.writeULEB128(module.data.length);
-            for (const data of module.data) {
-                sectionWriter.writeMemoryIndex(data.memory);
-                sectionWriter.writeExpression(data.offset);
-                sectionWriter.writeULEB128(data.buffer.length);
-                sectionWriter.write(data.buffer);
-            }
-            endSection();
-        }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_ELEMENT);
 
         if (module.functions.length !== 0) {
             // Write the code section
@@ -360,6 +368,21 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_CODE);
+
+        if (module.data.length !== 0) {
+            // Write the data section
+            startSection(WasmSectionType.data);
+            sectionWriter.writeULEB128(module.data.length);
+            for (const data of module.data) {
+                sectionWriter.writeMemoryIndex(data.memory);
+                sectionWriter.writeExpression(data.offset);
+                sectionWriter.writeULEB128(data.buffer.length);
+                sectionWriter.write(data.buffer);
+            }
+            endSection();
+        }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_DATA);
     }
 
     public writeExpression(expr: SpiderExpression, type?: WasmValueType | typeof WASM_RESULT_TYPE_VOID, terminator: WasmBlockOpcode = WasmBlockOpcode.end) {

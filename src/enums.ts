@@ -5,6 +5,21 @@ export enum WasmValueType {
     f64 = 0x7C
 }
 
+export enum SpiderCustomSectionPosition {
+    AFTER_HEADER,
+    AFTER_TYPE,
+    AFTER_IMPORT,
+    AFTER_FUNCTION,
+    AFTER_TABLE,
+    AFTER_MEMORY,
+    AFTER_GLOBAL,
+    AFTER_EXPORT,
+    AFTER_START,
+    AFTER_ELEMENT,
+    AFTER_CODE,
+    AFTER_DATA
+}
+
 export const enum WasmExportType {
     func = 0x00,
     table = 0x01,

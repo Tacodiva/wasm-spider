@@ -2,14 +2,15 @@ import { SpiderExport, SpiderExportFunction, SpiderExportGlobal, SpiderExportMem
 import { SpiderFunction, SpiderFunctionDefinition } from "./SpiderFunction";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderTypeDefinition } from "./SpiderType";
-import { WasmExportType, WasmImportType, WasmValueType } from "./enums";
+import { SpiderCustomSectionPosition, WasmExportType, WasmImportType, WasmValueType } from "./enums";
 import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
 import { SpiderGlobal, SpiderGlobalDefinition } from "./SpiderGlobal";
 import { SpiderMemory, SpiderMemoryDefinition } from "./SpiderMemory";
 import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 import { SpiderElement, SpiderElementDefinition } from "./SpiderElement";
 import { SpiderConstExpression } from "./SpiderConstExpression";
-import { SpiderData } from "./SpiderData";
+import { SpiderData, SpiderDataDefinition } from "./SpiderData";
+import { SpiderCustomSection, SpiderCustomSectionDefinition } from "./SpiderCustomSection";
 
 interface SpiderTypeDesc {
     parameters?: WasmValueType[];
@@ -28,6 +29,8 @@ export class SpiderModule {
     public readonly data: SpiderData[];
     public start: SpiderFunctionDefinition | null;
 
+    public readonly customSections: (SpiderCustomSection[] | undefined)[];
+
     public constructor() {
         this.types = [];
         this.functions = [];
@@ -39,6 +42,7 @@ export class SpiderModule {
         this.elements = [];
         this.data = [];
         this.start = null;
+        this.customSections = [];
     }
 
     public createType(parameters: WasmValueType[] = [], ...results: WasmValueType[]): SpiderTypeDefinition {
@@ -141,8 +145,20 @@ export class SpiderModule {
     }
 
     public createData(memory: SpiderMemory, offset: number | SpiderConstExpression | SpiderGlobal, buffer: ArrayLike<number>) {
-        const data = new SpiderData(this, memory, offset, buffer);
+        const data = new SpiderDataDefinition(this, memory, offset, buffer);
         this.data.push(data);
         return data;
+    }
+
+    public getCustomSections(position: SpiderCustomSectionPosition) {
+        const sections = this.customSections[position];
+        if (!sections) return this.customSections[position] = [];
+        return sections;
+    }
+
+    public createCustomSection(name: string, buffer: ArrayLike<number>, position: SpiderCustomSectionPosition = SpiderCustomSectionPosition.AFTER_HEADER) {
+        const section = new SpiderCustomSectionDefinition(this, name, buffer);
+        this.getCustomSections(position).push(section);
+        return section;
     }
 }
