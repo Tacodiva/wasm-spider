@@ -13,6 +13,10 @@ export class InstrList {
         this.instructions.push({ opcode, args });
     }
 
+    public emitConstant(type: WasmValueType, value: number) {
+        this.emit(WasmOpcode.f64_const - (type & 0x3), [value]);
+    }
+
     public emitBlock(blocktype?: WasmValueType): InstrList {
         const inst = new InstrList();
         this.emit(WasmOpcode.block, inst, blocktype);

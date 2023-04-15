@@ -5,8 +5,9 @@ import { InstrList } from "./InstrList";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
-import { SpiderImportFunction } from "./SpiderImport";
+import { SpiderImportFunction, SpiderImportGlobal } from "./SpiderImport";
 import { LocalReference, LocalReferenceType } from "./LocalReference";
+import { SpiderGlobal } from "./SpiderGlobal";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
@@ -53,14 +54,16 @@ const WasmInstuctionWriters = {
     },
     [WasmOpcode.call]: (writer, _, func) => writer.writeFunctionIndex(func),
 
+    [WasmOpcode.local_get]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
+    [WasmOpcode.local_set]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
+    [WasmOpcode.local_tee]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
+    [WasmOpcode.global_get]: (writer, _, globalidx) => writer.writeGlobalIndex(globalidx),
+    [WasmOpcode.global_set]: (writer, _, globalidx) => writer.writeGlobalIndex(globalidx),
+
     [WasmOpcode.i32_const]: (writer, _, n) => writer.writeSLEB128(n),
     [WasmOpcode.i64_const]: (writer, _, n) => writer.writeSLEB128(n),
     [WasmOpcode.f32_const]: (writer, _, z) => writer.writeF32(z),
     [WasmOpcode.f64_const]: (writer, _, z) => writer.writeF64(z),
-
-    [WasmOpcode.local_get]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
-    [WasmOpcode.local_set]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
-    [WasmOpcode.local_tee]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
 } satisfies {
         [K in keyof OpcodeInstArgMapValues]: WasmInstWriter<K>
     } as {
@@ -71,12 +74,14 @@ export class WasmWriter extends BinaryWriter {
     private _module: SpiderModule | null = null;
     private _functionIndexes: Map<SpiderFunction | SpiderImportFunction, number> | null = null;
     private _typeIndexes: Map<SpiderType, number> | null = null;
+    private _globalIndexes: Map<SpiderGlobal | SpiderImportGlobal, number> | null = null;
 
     public constructor(parent: WasmWriter | null = null) {
         super();
         this._module = parent?._module ?? null;
         this._functionIndexes = parent?._functionIndexes ?? null;
         this._typeIndexes = parent?._typeIndexes ?? null;
+        this._globalIndexes = parent?._globalIndexes ?? null;
     }
 
     public writeModule(module: SpiderModule) {
@@ -86,19 +91,29 @@ export class WasmWriter extends BinaryWriter {
         this._module = module;
 
         this._typeIndexes = new Map();
+        this._functionIndexes = new Map();
+        this._globalIndexes = new Map();
+
+        for (const imprt of module.imports) {
+            switch (imprt.importType) {
+                case WasmImportType.func:
+                    this._functionIndexes.set(imprt, this._functionIndexes.size);
+                    break;
+                case WasmImportType.global:
+                    this._globalIndexes.set(imprt, this._globalIndexes.size);
+                    break;
+            }
+        }
+
         for (let i = 0; i < module.types.length; i++)
             this._typeIndexes.set(module.types[i], i);
 
-        this._functionIndexes = new Map();
-        {
-            let i = 0;
-            for (const imprt of module.imports) {
-                if (imprt.importType === WasmImportType.func)
-                    this._functionIndexes.set(imprt, i++);
-            }
-            for (let j = 0; j < module.functions.length; j++)
-                this._functionIndexes.set(module.functions[j], i++);
-        }
+        for (let j = 0; j < module.functions.length; j++)
+            this._functionIndexes.set(module.functions[j], this._functionIndexes.size);
+
+        for (let j = 0; j < module.globals.length; j++)
+            this._globalIndexes.set(module.globals[j], this._globalIndexes.size);
+
 
         const sectionWriter = new WasmWriter(this);
         const startSection = (type: WasmSectionType) => {
@@ -144,6 +159,9 @@ export class WasmWriter extends BinaryWriter {
                     case WasmImportType.func:
                         sectionWriter.writeTypeIndex(imprt.functionType);
                         break;
+                    case WasmImportType.global:
+                        sectionWriter.writeUint8(imprt.globalType);
+                        sectionWriter.writeUint8(imprt.globalMutable ? 0x00 : 0x01);
                 }
             }
             endSection();
@@ -158,6 +176,18 @@ export class WasmWriter extends BinaryWriter {
             endSection();
         }
 
+        if (module.globals.length !== 0) {
+            // Write the global section
+            startSection(WasmSectionType.global);
+            sectionWriter.writeULEB128(module.globals.length);
+            for (const global of module.globals) {
+                sectionWriter.writeUint8(global.type);
+                sectionWriter.writeUint8(global.mutable ? 0x01 : 0x00);
+                sectionWriter.writeBlock(global.initalizer);
+            }
+            endSection();
+        }
+
         if (module.exports.length !== 0) {
             // Write the export section
             startSection(WasmSectionType.export);
@@ -168,6 +198,9 @@ export class WasmWriter extends BinaryWriter {
                 switch (exprt.type) {
                     case WasmExportType.func:
                         sectionWriter.writeFunctionIndex(exprt.value);
+                        break;
+                    case WasmExportType.global:
+                        sectionWriter.writeGlobalIndex(exprt.value);
                         break;
                 }
             }
@@ -238,7 +271,7 @@ export class WasmWriter extends BinaryWriter {
     }
 
     public getFunctionIndex(func: SpiderFunction | SpiderImportFunction): number {
-        if (!this._functionIndexes) throw new Error("Function IDs not allocated.");
+        if (!this._functionIndexes) throw new Error("Function indexes not allocated.");
         const id = this._functionIndexes.get(func);
         if (id === undefined) throw new Error("Function not a part of the module.");
         return id;
@@ -249,9 +282,20 @@ export class WasmWriter extends BinaryWriter {
     }
 
     public getTypeIndex(type: SpiderType): number {
-        if (!this._typeIndexes) throw new Error("Type IDs not allocated.");
+        if (!this._typeIndexes) throw new Error("Type indexes not allocated.");
         const id = this._typeIndexes.get(type);
         if (id === undefined) throw new Error("Type not a part of the module.");
+        return id;
+    }
+
+    public writeGlobalIndex(global: SpiderGlobal | SpiderImportGlobal) {
+        this.writeULEB128(this.getGlobalIndex(global));
+    }
+
+    public getGlobalIndex(global: SpiderGlobal | SpiderImportGlobal): number {
+        if (!this._globalIndexes) throw new Error("Global indexes not allocated.");
+        const id = this._globalIndexes.get(global);
+        if (id === undefined) throw new Error("Global not a part of the module.");
         return id;
     }
 }

@@ -1,5 +1,6 @@
+import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderType } from "./SpiderType";
-import { WasmImportType } from "./enums";
+import { WasmImportType, WasmValueType } from "./enums";
 
 interface SpiderImportBase {
     importType: WasmImportType;
@@ -12,4 +13,10 @@ export interface SpiderImportFunction extends SpiderImportBase {
     functionType: SpiderType
 }
 
-export type SpiderImport = SpiderImportFunction;
+export interface SpiderImportGlobal extends SpiderImportBase {
+    importType: WasmImportType.global,
+    globalType: WasmValueType,
+    globalMutable: boolean
+}
+
+export type SpiderImport = SpiderImportFunction | SpiderImportGlobal;

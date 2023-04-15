@@ -1,4 +1,5 @@
 import { SpiderFunction } from './SpiderFunction';
+import { SpiderGlobal } from './SpiderGlobal';
 import { WasmExportType } from './enums';
 
 interface ISpiderExport {
@@ -11,4 +12,9 @@ export interface SpiderExportFunction extends ISpiderExport {
     value: SpiderFunction
 }
 
-export type SpiderExport = SpiderExportFunction;
+export interface SpiderExportGlobal extends ISpiderExport {
+    type: WasmExportType.global;
+    value: SpiderGlobal;
+}
+
+export type SpiderExport = SpiderExportFunction | SpiderExportGlobal;
