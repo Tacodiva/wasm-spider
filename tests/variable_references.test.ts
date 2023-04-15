@@ -54,7 +54,7 @@ test('Simple Variable Refs + ifelse', async () => {
 
     // Compile the module into a WebAssembly.Module
     const moduleBuffer = spider.writeModule(spiderModule);
-    fs.writeFileSync("tests/out/test4.wasm", new DataView(moduleBuffer));
+    // fs.writeFileSync("tests/out/test4.wasm", new DataView(moduleBuffer));
     const compiledModule = await WebAssembly.compile(moduleBuffer);
 
     let lastReturn: null | number = null;

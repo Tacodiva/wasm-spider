@@ -43,7 +43,7 @@ test('Simple Functions', async () => {
 
     // Compile the module into a WebAssembly.Module
     const moduleBuffer = spider.writeModule(spiderModule);
-    fs.writeFileSync("tests/out/test3.wasm", new DataView(moduleBuffer));
+    // fs.writeFileSync("tests/out/test3.wasm", new DataView(moduleBuffer));
     const compiledModule = await WebAssembly.compile(moduleBuffer);
 
     let lastReturn: null | number = null;

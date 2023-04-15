@@ -11,6 +11,9 @@ export type OpcodeInstArgMapValues = {
     [WasmOpcode.block]: [instr: SpiderExpression, blocktype?: WasmValueType],
     [WasmOpcode.loop]: [instr: SpiderExpression, blocktype?: WasmValueType],
     [WasmOpcode.if]: [instrTrue: SpiderExpression, instrFalse?: SpiderExpression, blocktype?: WasmValueType],
+    [WasmOpcode.br]: [labelidx: number],
+    [WasmOpcode.br_if]: [labelidx: number],
+    [WasmOpcode.br_table]: [labels: number[], defaultLabel: number],
     [WasmOpcode.call]: [func: SpiderFunction],
     [WasmOpcode.call_indirect]: [type: SpiderTypeDefinition, table: SpiderTable],
 

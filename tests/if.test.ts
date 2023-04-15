@@ -33,7 +33,7 @@ test('Simple If', async () => {
 
     // Compile the module into a WebAssembly.Module
     const moduleBuffer = spider.writeModule(spiderModule);
-    fs.writeFileSync("tests/out/test2.wasm", new DataView(moduleBuffer));
+    // fs.writeFileSync("tests/out/test2.wasm", new DataView(moduleBuffer));
     const compiledModule = await WebAssembly.compile(moduleBuffer);
 
     // Instansiate the module like normal. It's just like every other WASM module now!

@@ -58,6 +58,13 @@ const WasmInstuctionWriters = {
             writer.writeExpression(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID);
         }
     },
+    [WasmOpcode.br]: (writer, _, labelidx) => writer.writeULEB128(labelidx),
+    [WasmOpcode.br_if]: (writer, _, labelidx) => writer.writeULEB128(labelidx),
+    [WasmOpcode.br_table]: (writer, _, labels, defaultLabel) => {
+        writer.writeULEB128(labels.length);
+        for (const label of labels) writer.writeULEB128(label);
+        writer.writeULEB128(defaultLabel);
+    },
     [WasmOpcode.call]: (writer, _, func) => writer.writeFunctionIndex(func),
     [WasmOpcode.call_indirect]: (writer, _, type, table) => {
         writer.writeTypeIndex(type);
@@ -348,7 +355,7 @@ export class WasmWriter extends BinaryWriter {
             this.writeInstruction(inst);
         this.writeUint8(terminator);
     }
-    
+
     public writeInstruction<T extends WasmOpcode>(inst: SpiderInstruction<T>) {
         if (this._module == null)
             throw new Error("Not currently writing a module");
