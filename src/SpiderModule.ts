@@ -5,10 +5,11 @@ import { SpiderTypeDefinition } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmValueType } from "./enums";
 import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
 import { SpiderGlobal, SpiderGlobalDefinition } from "./SpiderGlobal";
-import { SpiderMemoryDefinition } from "./SpiderMemory";
+import { SpiderMemory, SpiderMemoryDefinition } from "./SpiderMemory";
 import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 import { SpiderElement, SpiderElementDefinition } from "./SpiderElement";
 import { SpiderConstExpression } from "./SpiderConstExpression";
+import { SpiderData } from "./SpiderData";
 
 interface SpiderTypeDesc {
     parameters?: WasmValueType[];
@@ -24,6 +25,7 @@ export class SpiderModule {
     public readonly memories: SpiderMemoryDefinition[];
     public readonly tables: SpiderTableDefinition[];
     public readonly elements: SpiderElement[];
+    public readonly data: SpiderData[];
     public start: SpiderFunctionDefinition | null;
 
     public constructor() {
@@ -35,6 +37,7 @@ export class SpiderModule {
         this.memories = [];
         this.tables = [];
         this.elements = [];
+        this.data = [];
         this.start = null;
     }
 
@@ -135,5 +138,11 @@ export class SpiderModule {
         const element = new SpiderElementDefinition(this, table, offset, functions);
         this.elements.push(element);
         return element;
+    }
+
+    public createData(memory: SpiderMemory, offset: number | SpiderConstExpression | SpiderGlobal, buffer: ArrayLike<number>) {
+        const data = new SpiderData(this, memory, offset, buffer);
+        this.data.push(data);
+        return data;
     }
 }

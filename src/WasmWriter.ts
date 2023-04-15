@@ -323,6 +323,19 @@ export class WasmWriter extends BinaryWriter {
             }
             endSection();
         }
+        
+        if (module.data.length !== 0) {
+            // Write the data section
+            startSection(WasmSectionType.data);
+            sectionWriter.writeULEB128(module.data.length);
+            for (const data of module.data) {
+                sectionWriter.writeMemoryIndex(data.memory);
+                sectionWriter.writeExpression(data.offset);
+                sectionWriter.writeULEB128(data.buffer.length);
+                sectionWriter.write(data.buffer);
+            }
+            endSection();
+        }
 
         if (module.functions.length !== 0) {
             // Write the code section
