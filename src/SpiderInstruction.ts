@@ -1,10 +1,13 @@
 import { InstrList } from "./InstrList";
+import { SpiderFunction } from "./SpiderFunction";
+import { SpiderImportFunction } from "./SpiderImport";
 import { WasmOpcode, WasmValueType } from "./enums";
 
 export type OpcodeInstArgMapValues = {
     [WasmOpcode.block]: [instr: InstrList, blocktype?: WasmValueType],
     [WasmOpcode.loop]: [instr: InstrList, blocktype?: WasmValueType],
     [WasmOpcode.if]: [instrTrue: InstrList, instrFalse?: InstrList, blocktype?: WasmValueType],
+    [WasmOpcode.call]: [func: SpiderFunction | SpiderImportFunction],
 
     [WasmOpcode.local_get]: [localidx: number],
     [WasmOpcode.local_set]: [localidx: number],

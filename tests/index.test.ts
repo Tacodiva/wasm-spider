@@ -17,7 +17,7 @@ test('Simple Add', async () => {
     addFunction.body.emit(WasmOpcode.f64_add); // Add the two topmost stack items together
 
     // We need to make our function visible to the outside world.
-    spiderModule.createExport("add", addFunction);
+    spiderModule.exportFunction("add", addFunction);
 
     // Compile the module into a WebAssembly.Module
     const compiledModule = await spider.compileModule(spiderModule);

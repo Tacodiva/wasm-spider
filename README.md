@@ -26,7 +26,7 @@
     addition.body.emit(WasmOpcode.f64_add); // Add the two topmost stack items together
 
     // We need to make our function visible to the outside world.
-    spiderModule.createExport("add", addition);
+    spiderModule.exportFunction("add", addition);
 
     // Compile the virtual into a real WebAssembly.Module
     const compiledModule = await spider.compileModule(spiderModule);

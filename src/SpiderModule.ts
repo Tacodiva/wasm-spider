@@ -2,17 +2,25 @@ import { SpiderExport, SpiderExportFunction } from "./SpiderExport";
 import { SpiderFunction } from "./SpiderFunction";
 import { InstrList } from "./InstrList";
 import { SpiderType } from "./SpiderType";
-import { WasmExportType, WasmValueType } from "./enums";
+import { WasmExportType, WasmImportType, WasmValueType } from "./enums";
+import { SpiderImport, SpiderImportFunction } from "./SpiderImport";
+
+interface SpiderTypeDesc {
+    parameters?: WasmValueType[];
+    results?: WasmValueType[];
+}
 
 export class SpiderModule {
     public readonly types: SpiderType[];
     public readonly functions: SpiderFunction[];
     public readonly exports: SpiderExport[];
+    public readonly imports: SpiderImport[];
 
     public constructor() {
         this.types = [];
         this.functions = [];
         this.exports = [];
+        this.imports = [];
     }
 
     public createType(parameters: WasmValueType[] = [], ...results: WasmValueType[]): SpiderType {
@@ -21,25 +29,33 @@ export class SpiderModule {
         return type;
     }
 
+    private _getOrCreateType(type: SpiderType | SpiderTypeDesc | undefined) {
+        if (type instanceof SpiderType)
+            return type;
+        else if (type)
+            return this.createType(type.parameters, ...(type.results ?? []));
+        else
+            return this.createType();
+    }
+
     public createFunction(
-        type?: SpiderType | { parameters?: WasmValueType[], results?: WasmValueType[] },
+        type?: SpiderType | SpiderTypeDesc,
         locals: WasmValueType[] = [],
         body: InstrList = new InstrList()) {
-        let spiderType;
-        if (type instanceof SpiderType)
-            spiderType = type;
-        else if (type)
-            spiderType = this.createType(type.parameters, ...(type.results ?? []));
-        else
-            spiderType = this.createType();
-        const func = new SpiderFunction(this, spiderType, locals, body);
+        const func = new SpiderFunction(this, this._getOrCreateType(type), locals, body);
         this.functions.push(func);
         return func;
     }
 
-    public createExport(name: string, value: SpiderFunction): SpiderExportFunction {
+    public exportFunction(name: string, value: SpiderFunction): SpiderExportFunction {
         const exprt: SpiderExportFunction = { type: WasmExportType.func, name, value };
         this.exports.push(exprt);
         return exprt;
+    }
+
+    public importFunction(module: string, name: string, type?: SpiderType | SpiderTypeDesc): SpiderImportFunction {
+        const imprt: SpiderImportFunction = { importType: WasmImportType.func, name, module, functionType: this._getOrCreateType(type) };
+        this.imports.push(imprt);
+        return imprt;
     }
 }

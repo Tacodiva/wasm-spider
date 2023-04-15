@@ -12,6 +12,13 @@ export const enum WasmExportType {
     global = 0x03
 }
 
+export const enum WasmImportType {
+    func = 0x00,
+    table = 0x01,
+    mem = 0x02,
+    global = 0x03
+}
+
 export enum WasmOpcode {
     unreachable = 0x00,
     nop = 0x01,

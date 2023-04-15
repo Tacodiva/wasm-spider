@@ -4,7 +4,8 @@ import { ISpiderInstr, OpcodeInstArgMapValues, OpcodeInstArgMap } from "./Spider
 import { InstrList } from "./InstrList";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
-import { WasmExportType, WasmOpcode, WasmValueType } from "./enums";
+import { WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
+import { SpiderImportFunction } from "./SpiderImport";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
@@ -49,6 +50,7 @@ const WasmInstuctionWriters = {
             writer.writeBlock(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID);
         }
     },
+    [WasmOpcode.call]: (writer, _, func) => writer.writeFunctionIndex(func),
 
     [WasmOpcode.i32_const]: (writer, _, n) => writer.writeSLEB128(n),
     [WasmOpcode.i64_const]: (writer, _, n) => writer.writeSLEB128(n),
@@ -66,14 +68,14 @@ const WasmInstuctionWriters = {
 
 export class WasmWriter extends BinaryWriter {
     private _module: SpiderModule | null = null;
-    private _funcIDs: Map<SpiderFunction, number> | null = null;
-    private _typeIDs: Map<SpiderType, number> | null = null;
+    private _functionIndexes: Map<SpiderFunction | SpiderImportFunction, number> | null = null;
+    private _typeIndexes: Map<SpiderType, number> | null = null;
 
     public constructor(parent: WasmWriter | null = null) {
         super();
         this._module = parent?._module ?? null;
-        this._funcIDs = parent?._funcIDs ?? null;
-        this._typeIDs = parent?._typeIDs ?? null;
+        this._functionIndexes = parent?._functionIndexes ?? null;
+        this._typeIndexes = parent?._typeIndexes ?? null;
     }
 
     public writeModule(module: SpiderModule) {
@@ -82,13 +84,20 @@ export class WasmWriter extends BinaryWriter {
 
         this._module = module;
 
-        this._typeIDs = new Map();
+        this._typeIndexes = new Map();
         for (let i = 0; i < module.types.length; i++)
-            this._typeIDs.set(module.types[i], i);
+            this._typeIndexes.set(module.types[i], i);
 
-        this._funcIDs = new Map();
-        for (let i = 0; i < module.functions.length; i++)
-            this._funcIDs.set(module.functions[i], i);
+        this._functionIndexes = new Map();
+        {
+            let i = 0;
+            for (const imprt of module.imports) {
+                if (imprt.importType === WasmImportType.func)
+                    this._functionIndexes.set(imprt, i++);
+            }
+            for (let j = 0; j < module.functions.length; j++)
+                this._functionIndexes.set(module.functions[j], i++);
+        }
 
         const sectionWriter = new WasmWriter(this);
         const startSection = (type: WasmSectionType) => {
@@ -122,12 +131,29 @@ export class WasmWriter extends BinaryWriter {
             endSection();
         }
 
+        if (module.imports.length !== 0) {
+            // Write the imports section
+            startSection(WasmSectionType.import);
+            sectionWriter.writeULEB128(module.imports.length);
+            for (const imprt of module.imports) {
+                sectionWriter.writeName(imprt.module);
+                sectionWriter.writeName(imprt.name);
+                sectionWriter.writeUint8(imprt.importType);
+                switch (imprt.importType) {
+                    case WasmImportType.func:
+                        sectionWriter.writeTypeIndex(imprt.functionType);
+                        break;
+                }
+            }
+            endSection();
+        }
+
         if (module.functions.length !== 0) {
             // Write the function section
             startSection(WasmSectionType.function);
             sectionWriter.writeULEB128(module.functions.length);
             for (const func of module.functions)
-                sectionWriter.writeULEB128(this.getTypeID(func.type));
+                sectionWriter.writeTypeIndex(func.type);
             endSection();
         }
 
@@ -140,7 +166,7 @@ export class WasmWriter extends BinaryWriter {
                 sectionWriter.writeUint8(exprt.type);
                 switch (exprt.type) {
                     case WasmExportType.func:
-                        sectionWriter.writeSLEB128(this.getFunctionID(exprt.value));
+                        sectionWriter.writeFunctionIndex(exprt.value);
                         break;
                 }
             }
@@ -197,17 +223,24 @@ export class WasmWriter extends BinaryWriter {
         this.write(encoded);
     }
 
+    public writeFunctionIndex(func: SpiderFunction | SpiderImportFunction) {
+        this.writeULEB128(this.getFunctionIndex(func));
+    }
 
-    public getFunctionID(func: SpiderFunction): number {
-        if (!this._funcIDs) throw new Error("Function IDs not allocated.");
-        const id = this._funcIDs.get(func);
+    public getFunctionIndex(func: SpiderFunction | SpiderImportFunction): number {
+        if (!this._functionIndexes) throw new Error("Function IDs not allocated.");
+        const id = this._functionIndexes.get(func);
         if (id === undefined) throw new Error("Function not a part of the module.");
         return id;
     }
 
-    public getTypeID(type: SpiderType): number {
-        if (!this._typeIDs) throw new Error("Type IDs not allocated.");
-        const id = this._typeIDs.get(type);
+    public writeTypeIndex(type: SpiderType) {
+        this.writeULEB128(this.getTypeIndex(type));
+    }
+
+    public getTypeIndex(type: SpiderType): number {
+        if (!this._typeIndexes) throw new Error("Type IDs not allocated.");
+        const id = this._typeIndexes.get(type);
         if (id === undefined) throw new Error("Type not a part of the module.");
         return id;
     }
