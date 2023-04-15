@@ -2,7 +2,9 @@ import { MutableLocalParameterReference, LocalParameterReference, LocalReference
 import { SpiderModule } from "./SpiderModule";
 import { WasmValueType } from "./enums";
 
-export class SpiderType {
+export type SpiderType = SpiderTypeDefinition;
+
+export class SpiderTypeDefinition {
 
     private readonly _parameters: WasmValueType[];
     private _paramRefs: (MutableLocalParameterReference | undefined)[];

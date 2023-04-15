@@ -1,6 +1,9 @@
+import { SpiderImportTable } from "./SpiderImport";
 import { SpiderModule } from "./SpiderModule";
 
-export class SpiderTable {
+export type SpiderTable = SpiderTableDefinition | SpiderImportTable;
+
+export class SpiderTableDefinition {
 
     public readonly module;
     public minSize: number;

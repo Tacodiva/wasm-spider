@@ -1,8 +1,11 @@
 import { InstrList } from "./InstrList";
+import { SpiderImportGlobal } from "./SpiderImport";
 import { SpiderModule } from "./SpiderModule";
 import { WasmOpcode, WasmValueType } from "./enums";
 
-export class SpiderGlobal {
+export type SpiderGlobal = SpiderGlobalDefinition | SpiderImportGlobal;
+
+export class SpiderGlobalDefinition {
     public readonly module: SpiderModule;
 
     public type: WasmValueType;

@@ -2,7 +2,7 @@ import { SpiderImportTable, SpiderModule, SpiderTable, WasmOpcode, WasmValueType
 import { InstrList } from "../src/InstrList";
 
 describe("Tables", () => {
-    function poppulateModule(spiderModule: SpiderModule, table: SpiderTable | SpiderImportTable) {
+    function poppulateModule(spiderModule: SpiderModule, table: SpiderTable) {
         const addFunction = spiderModule.createFunction({
             parameters: [WasmValueType.f64, WasmValueType.f64],
             results: [WasmValueType.f64]

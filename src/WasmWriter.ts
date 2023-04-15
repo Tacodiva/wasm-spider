@@ -1,15 +1,15 @@
 import { BinaryWriter } from "./BinaryWriter";
-import { SpiderFunction } from "./SpiderFunction";
+import { SpiderFunction, SpiderFunctionDefinition } from "./SpiderFunction";
 import { ISpiderInstr, OpcodeInstArgMapValues, OpcodeInstArgMap } from "./SpiderInstruction";
 import { InstrList } from "./InstrList";
 import { SpiderModule } from "./SpiderModule";
-import { SpiderType } from "./SpiderType";
+import { SpiderType, SpiderTypeDefinition } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
 import { SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
 import { LocalReference, LocalReferenceType } from "./LocalReference";
-import { SpiderGlobal } from "./SpiderGlobal";
-import { SpiderMemory } from "./SpiderMemory";
-import { SpiderTable } from "./SpiderTable";
+import { SpiderGlobal, SpiderGlobalDefinition } from "./SpiderGlobal";
+import { SpiderMemory, SpiderMemoryDefinition } from "./SpiderMemory";
+import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
@@ -108,11 +108,11 @@ const WasmInstuctionWriters = {
 
 export class WasmWriter extends BinaryWriter {
     private _module: SpiderModule | null = null;
-    private _functionIndexes: Map<SpiderFunction | SpiderImportFunction, number> | null = null;
+    private _functionIndexes: Map<SpiderFunction, number> | null = null;
     private _typeIndexes: Map<SpiderType, number> | null = null;
-    private _globalIndexes: Map<SpiderGlobal | SpiderImportGlobal, number> | null = null;
-    private _memoryIndexes: Map<SpiderMemory | SpiderImportMemory, number> | null = null;
-    private _tableIndexes: Map<SpiderTable | SpiderImportTable, number> | null = null;
+    private _globalIndexes: Map<SpiderGlobal, number> | null = null;
+    private _memoryIndexes: Map<SpiderMemory, number> | null = null;
+    private _tableIndexes: Map<SpiderTable, number> | null = null;
 
     public constructor(parent: WasmWriter | null = null) {
         super();
@@ -382,44 +382,44 @@ export class WasmWriter extends BinaryWriter {
             this.writeULEB128(local.index + local.func.parameters.length)
     }
 
-    public writeFunctionIndex(func: SpiderFunction | SpiderImportFunction) {
+    public writeFunctionIndex(func: SpiderFunction) {
         this.writeULEB128(this.getFunctionIndex(func));
     }
 
-    public getFunctionIndex(func: SpiderFunction | SpiderImportFunction): number {
+    public getFunctionIndex(func: SpiderFunction): number {
         if (!this._functionIndexes) throw new Error("Function indexes not allocated.");
         const id = this._functionIndexes.get(func);
         if (id === undefined) throw new Error("Function not a part of the module.");
         return id;
     }
 
-    public writeTypeIndex(type: SpiderType) {
+    public writeTypeIndex(type: SpiderTypeDefinition) {
         this.writeULEB128(this.getTypeIndex(type));
     }
 
-    public getTypeIndex(type: SpiderType): number {
+    public getTypeIndex(type: SpiderTypeDefinition): number {
         if (!this._typeIndexes) throw new Error("Type indexes not allocated.");
         const id = this._typeIndexes.get(type);
         if (id === undefined) throw new Error("Type not a part of the module.");
         return id;
     }
 
-    public writeGlobalIndex(global: SpiderGlobal | SpiderImportGlobal) {
+    public writeGlobalIndex(global: SpiderGlobalDefinition | SpiderImportGlobal) {
         this.writeULEB128(this.getGlobalIndex(global));
     }
 
-    public getGlobalIndex(global: SpiderGlobal | SpiderImportGlobal): number {
+    public getGlobalIndex(global: SpiderGlobalDefinition | SpiderImportGlobal): number {
         if (!this._globalIndexes) throw new Error("Global indexes not allocated.");
         const id = this._globalIndexes.get(global);
         if (id === undefined) throw new Error("Global not a part of the module.");
         return id;
     }
 
-    public writeMemoryIndex(memory?: SpiderMemory | SpiderImportMemory) {
+    public writeMemoryIndex(memory?: SpiderMemory) {
         this.writeULEB128(this.getMemoryIndex(memory));
     }
 
-    public getMemoryIndex(memory?: SpiderMemory | SpiderImportMemory): number {
+    public getMemoryIndex(memory?: SpiderMemory): number {
         if (!memory) return 0;
         if (!this._memoryIndexes) throw new Error("Memory indexes not allocated.");
         const id = this._memoryIndexes.get(memory);
@@ -427,12 +427,11 @@ export class WasmWriter extends BinaryWriter {
         return id;
     }
 
-    public writeTableIndex(table?: SpiderTable | SpiderImportTable) {
+    public writeTableIndex(table: SpiderTable) {
         this.writeULEB128(this.getTableIndex(table));
     }
 
-    public getTableIndex(table?: SpiderTable | SpiderImportTable): number {
-        if (!table) return 0;
+    public getTableIndex(table: SpiderTable): number {
         if (!this._tableIndexes) throw new Error("Table indexes not allocated.");
         const id = this._tableIndexes.get(table);
         if (id === undefined) throw new Error("Table not a part of the module.");

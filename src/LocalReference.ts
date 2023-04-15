@@ -1,5 +1,5 @@
-import { SpiderFunction } from "./SpiderFunction";
-import { SpiderType } from "./SpiderType";
+import { SpiderFunctionDefinition } from "./SpiderFunction";
+import { SpiderTypeDefinition } from "./SpiderType";
 import { WasmValueType } from "./enums";
 
 export const enum LocalReferenceType {
@@ -9,7 +9,7 @@ export const enum LocalReferenceType {
 
 export interface MutableLocalParameterReference {
     refType: LocalReferenceType.PARAM;
-    type: SpiderType;
+    type: SpiderTypeDefinition;
     index: number;
     value: WasmValueType;
 }
@@ -18,7 +18,7 @@ export type LocalParameterReference = Readonly<MutableLocalParameterReference>;
 
 export interface MutableLocalVariableReference {
     refType: LocalReferenceType.LOCAL;
-    func: SpiderFunction;
+    func: SpiderFunctionDefinition;
     index: number;
     value: WasmValueType;
 }

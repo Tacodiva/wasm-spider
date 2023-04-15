@@ -1,6 +1,9 @@
+import { SpiderImportMemory } from "./SpiderImport";
 import { SpiderModule } from "./SpiderModule";
 
-export class SpiderMemory {
+export type SpiderMemory = SpiderMemoryDefinition | SpiderImportMemory;
+
+export class SpiderMemoryDefinition {
     public readonly module: SpiderModule;
 
     public minSize: number;

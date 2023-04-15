@@ -1,17 +1,19 @@
 import { InstrList } from "./InstrList";
 import { SpiderFunction } from "./SpiderFunction";
-import { SpiderImportFunction, SpiderImportTable } from "./SpiderImport";
+import { SpiderImportTable } from "./SpiderImport";
 import { SpiderModule } from "./SpiderModule";
-import { SpiderTable } from "./SpiderTable";
+import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 
-export class SpiderElement {
+export type SpiderElement = SpiderElementDefinition;
+
+export class SpiderElementDefinition {
     public readonly module: SpiderModule;
 
     public readonly offsetExpr: InstrList;
-    public readonly functions: (SpiderFunction | SpiderImportFunction)[];
-    public table: SpiderTable | SpiderImportTable;
+    public readonly functions: SpiderFunction[];
+    public table: SpiderTable;
 
-    public constructor(module: SpiderModule, table: SpiderTable | SpiderImportTable, offsetExpr: InstrList = new InstrList(), functions: (SpiderFunction | SpiderImportFunction)[] = []) {
+    public constructor(module: SpiderModule, table: SpiderTable, offsetExpr: InstrList = new InstrList(), functions: SpiderFunction[] = []) {
         this.module = module;
         this.table = table;
         this.offsetExpr = offsetExpr;
