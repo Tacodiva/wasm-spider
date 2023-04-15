@@ -6,6 +6,7 @@ import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
 import { SpiderImportFunction } from "./SpiderImport";
+import { LocalReference, LocalReferenceType } from "./LocalReference";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
@@ -57,9 +58,9 @@ const WasmInstuctionWriters = {
     [WasmOpcode.f32_const]: (writer, _, z) => writer.writeF32(z),
     [WasmOpcode.f64_const]: (writer, _, z) => writer.writeF64(z),
 
-    [WasmOpcode.local_get]: wasmInstructionUint32Param,
-    [WasmOpcode.local_set]: wasmInstructionUint32Param,
-    [WasmOpcode.local_tee]: wasmInstructionUint32Param
+    [WasmOpcode.local_get]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
+    [WasmOpcode.local_set]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
+    [WasmOpcode.local_tee]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
 } satisfies {
         [K in keyof OpcodeInstArgMapValues]: WasmInstWriter<K>
     } as {
@@ -183,10 +184,10 @@ export class WasmWriter extends BinaryWriter {
             for (const func of module.functions) {
                 codeWriter.reset();
 
-                codeWriter.writeULEB128(func.locals.length);
-                for (let i = 0; i < func.locals.length; i++) {
+                codeWriter.writeULEB128(func.localVariables.length);
+                for (let i = 0; i < func.localVariables.length; i++) {
                     codeWriter.writeULEB128(i);
-                    codeWriter.writeUint8(func.locals[i]);
+                    codeWriter.writeUint8(func.localVariables[i]);
                 }
 
                 codeWriter.writeBlock(func.body);
@@ -221,6 +222,15 @@ export class WasmWriter extends BinaryWriter {
         const encoded = BinaryWriter.TEXT_ENCODER.encode(value);
         this.writeULEB128(encoded.byteLength);
         this.write(encoded);
+    }
+
+    public writeLocalIndex(local: LocalReference) {
+        if (typeof local === "number")
+            this.writeULEB128(local);
+        else if (local.refType === LocalReferenceType.PARAM)
+            this.writeULEB128(local.index);
+        else
+            this.writeULEB128(local.index + local.func.parameters.length)
     }
 
     public writeFunctionIndex(func: SpiderFunction | SpiderImportFunction) {

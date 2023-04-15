@@ -24,7 +24,7 @@ export class SpiderModule {
     }
 
     public createType(parameters: WasmValueType[] = [], ...results: WasmValueType[]): SpiderType {
-        const type = new SpiderType(this, parameters, ...results);
+        const type = new SpiderType(this, parameters, results);
         this.types.push(type);
         return type;
     }
@@ -40,9 +40,9 @@ export class SpiderModule {
 
     public createFunction(
         type?: SpiderType | SpiderTypeDesc,
-        locals: WasmValueType[] = [],
+        vars: WasmValueType[] = [],
         body: InstrList = new InstrList()) {
-        const func = new SpiderFunction(this, this._getOrCreateType(type), locals, body);
+        const func = new SpiderFunction(this, this._getOrCreateType(type), vars, body);
         this.functions.push(func);
         return func;
     }

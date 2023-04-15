@@ -2,7 +2,7 @@ import { WasmOpcode, WasmValueType, spider } from "../src";
 import { InstrList } from "../src/InstrList";
 import fs from 'fs';
 
-test('Simple Functions', async () => {
+test('Simple Variable Refs + ifelse', async () => {
     // Create a blank WebAssembly module
     const spiderModule = spider.createModule();
 
@@ -18,32 +18,43 @@ test('Simple Functions', async () => {
     runCallbackFunc.body.emit(WasmOpcode.call, callbackFunc);
 
     const addFunction = spiderModule.createFunction({
-        parameters: [WasmValueType.f64, WasmValueType.f64],
+        parameters: [WasmValueType.i32, WasmValueType.i32, WasmValueType.f64],
         results: [WasmValueType.f64]
     });
 
-    const ret7729 = new InstrList();
+    const initalParam = addFunction.getParameter(2);
+    const initalFirstParam = addFunction.getParameter(0);
 
-    addFunction.body.emit(WasmOpcode.local_get, 0);
+    addFunction.body.emit(WasmOpcode.local_get, initalParam);
     addFunction.body.emit(WasmOpcode.f64_const, 0);
     addFunction.body.emit(WasmOpcode.f64_eq);
 
-    addFunction.body.emit(WasmOpcode.if, ret7729);
-    ret7729.emit(WasmOpcode.f64_const, 7729);
-    ret7729.emit(WasmOpcode.f64_const, 70);
-    ret7729.emit(WasmOpcode.call, runCallbackFunc);
-    ret7729.emit(WasmOpcode.return);
+    const ifelse = addFunction.body.emitIfElse(WasmValueType.f64);
 
-    addFunction.body.emit(WasmOpcode.local_get, 0);
-    addFunction.body.emit(WasmOpcode.local_get, 1);
-    addFunction.body.emit(WasmOpcode.f64_add);
+    ifelse.instrTrue.emit(WasmOpcode.f64_const, 7729);
+    ifelse.instrTrue.emit(WasmOpcode.f64_const, 70);
+    ifelse.instrTrue.emit(WasmOpcode.call, runCallbackFunc);
+
+    expect(addFunction.type.spliceParameters(0, 2, WasmValueType.i64)).toEqual([WasmValueType.i32, WasmValueType.i32]);
+    expect(initalFirstParam.index).toEqual(-1);
+    expect(initalParam.index).toEqual(1);
+    expect(addFunction.parameters).toEqual([WasmValueType.i64, WasmValueType.f64]);
+    expect(addFunction.type.spliceParameters(0, 1)).toEqual([WasmValueType.i64]);
+    expect(initalParam.index).toEqual(0);
+    const newParam = addFunction.addParameter(WasmValueType.f64);
+    expect(initalParam.index).toEqual(0);
+    expect(newParam.index).toEqual(1);
+
+    ifelse.instrFalse.emit(WasmOpcode.local_get, newParam);
+    ifelse.instrFalse.emit(WasmOpcode.local_get, initalParam);
+    ifelse.instrFalse.emit(WasmOpcode.f64_add);
 
     // We need to make our function visible to the outside world.
     spiderModule.exportFunction("add", addFunction);
 
     // Compile the module into a WebAssembly.Module
     const moduleBuffer = spider.writeModule(spiderModule);
-    fs.writeFileSync("tests/out/test3.wasm", new DataView(moduleBuffer));
+    fs.writeFileSync("tests/out/test4.wasm", new DataView(moduleBuffer));
     const compiledModule = await WebAssembly.compile(moduleBuffer);
 
     let lastReturn: null | number = null;

@@ -2,7 +2,7 @@ import { WasmOpcode, WasmValueType, spider } from "../src";
 import { InstrList } from "../src/InstrList";
 import fs from 'fs';
 
-test('Simple Add', async () => {
+test('Simple If', async () => {
     // Create a blank WebAssembly module
     const spiderModule = spider.createModule();
 
@@ -33,7 +33,7 @@ test('Simple Add', async () => {
 
     // Compile the module into a WebAssembly.Module
     const moduleBuffer = spider.writeModule(spiderModule);
-    fs.writeFileSync("tests/out2.wasm", new DataView(moduleBuffer));
+    fs.writeFileSync("tests/out/test2.wasm", new DataView(moduleBuffer));
     const compiledModule = await WebAssembly.compile(moduleBuffer);
 
     // Instansiate the module like normal. It's just like every other WASM module now!
