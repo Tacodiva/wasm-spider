@@ -13,6 +13,8 @@ test('Simple Add', async () => {
     const global = spiderModule.createGlobal(WasmValueType.f64, true, 60);
     spiderModule.exportGlobal("global", global);
 
+    expect(global.getValue()).toEqual(60);
+
     addFunction.body.emit(WasmOpcode.local_get, 0);
     addFunction.body.emit(WasmOpcode.global_get, global);
     addFunction.body.emit(WasmOpcode.f64_add);

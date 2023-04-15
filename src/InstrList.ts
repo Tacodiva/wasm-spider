@@ -14,7 +14,7 @@ export class InstrList {
     }
 
     public emitConstant(type: WasmValueType, value: number) {
-        this.emit(WasmOpcode.f64_const - (type & 0x3), [value]);
+        this.emit(WasmOpcode.f64_const - (type & 0x3), value);
     }
 
     public emitBlock(blocktype?: WasmValueType): InstrList {
