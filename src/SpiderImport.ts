@@ -25,4 +25,10 @@ export interface SpiderImportMemory extends SpiderImportBase {
     memoryMaxSize: number | undefined
 }
 
-export type SpiderImport = SpiderImportFunction | SpiderImportGlobal | SpiderImportMemory;
+export interface SpiderImportTable extends SpiderImportBase {
+    importType: WasmImportType.table,
+    tableMinSize: number,
+    tableMaxSize: number | undefined
+}
+
+export type SpiderImport = SpiderImportFunction | SpiderImportGlobal | SpiderImportMemory | SpiderImportTable;

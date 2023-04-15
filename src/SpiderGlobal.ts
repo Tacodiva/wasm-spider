@@ -7,7 +7,7 @@ export class SpiderGlobal {
 
     public type: WasmValueType;
     public mutable: boolean;
-    public initalizer: InstrList;
+    public readonly initalizer: InstrList;
 
     public constructor(module: SpiderModule, type: WasmValueType, mutable: boolean, value?: number) {
         this.module = module;

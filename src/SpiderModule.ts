@@ -1,11 +1,13 @@
-import { SpiderExport, SpiderExportFunction, SpiderExportGlobal, SpiderExportMemory } from "./SpiderExport";
+import { SpiderExport, SpiderExportFunction, SpiderExportGlobal, SpiderExportMemory, SpiderExportTable } from "./SpiderExport";
 import { SpiderFunction } from "./SpiderFunction";
 import { InstrList } from "./InstrList";
 import { SpiderType } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmValueType } from "./enums";
-import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory } from "./SpiderImport";
+import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
 import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderMemory } from "./SpiderMemory";
+import { SpiderTable } from "./SpiderTable";
+import { SpiderElement } from "./SpiderElement";
 
 interface SpiderTypeDesc {
     parameters?: WasmValueType[];
@@ -19,6 +21,8 @@ export class SpiderModule {
     public readonly imports: SpiderImport[];
     public readonly globals: SpiderGlobal[];
     public readonly memories: SpiderMemory[];
+    public readonly tables: SpiderTable[];
+    public readonly elements: SpiderElement[];
     public start: SpiderFunction | null;
 
     public constructor() {
@@ -28,6 +32,8 @@ export class SpiderModule {
         this.imports = [];
         this.globals = [];
         this.memories = [];
+        this.tables = [];
+        this.elements = [];
         this.start = null;
     }
 
@@ -101,5 +107,32 @@ export class SpiderModule {
         const exprt: SpiderExportMemory = { type: WasmExportType.mem, name, value };
         this.exports.push(exprt);
         return exprt;
+    }
+
+    public createTable(minSize: number, maxSize?: number): SpiderTable {
+        const table = new SpiderTable(this, minSize, maxSize);
+        this.tables.push(table);
+        return table;
+    }
+
+    public importTable(module: string, name: string, minSize: number, maxSize?: number): SpiderImportTable {
+        const imprt: SpiderImportTable = { importType: WasmImportType.table, name, module, tableMinSize: minSize, tableMaxSize: maxSize };
+        this.imports.push(imprt);
+        return imprt;
+    }
+
+    public exportTable(name: string, value: SpiderTable): SpiderExportTable {
+        const exprt: SpiderExportTable = { type: WasmExportType.table, name, value };
+        this.exports.push(exprt);
+        return exprt;
+    }
+
+    public createElement(
+        table: SpiderTable | SpiderImportTable,
+        offsetExpr: InstrList = new InstrList(),
+        functions: (SpiderFunction | SpiderImportFunction)[] = []) {
+        const element = new SpiderElement(this, table, offsetExpr, functions);
+        this.elements.push(element);
+        return element;
     }
 }

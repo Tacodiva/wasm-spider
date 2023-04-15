@@ -5,8 +5,10 @@ export { type SpiderFunction } from './SpiderFunction';
 export { type SpiderType } from './SpiderType'
 export { type SpiderGlobal } from './SpiderGlobal';
 export { type SpiderMemory } from './SpiderMemory';
-export { type SpiderExport, type SpiderExportFunction, type SpiderExportGlobal, type SpiderExportMemory } from './SpiderExport';
-export { type SpiderImport, type SpiderImportFunction, type SpiderImportGlobal, type SpiderImportMemory } from './SpiderImport'
+export { type SpiderTable } from './SpiderTable';
+export { type SpiderElement } from './SpiderElement';
+export { type SpiderExport, type SpiderExportFunction, type SpiderExportGlobal, type SpiderExportMemory, type SpiderExportTable } from './SpiderExport';
+export { type SpiderImport, type SpiderImportFunction, type SpiderImportGlobal, type SpiderImportMemory, type SpiderImportTable } from './SpiderImport'
 export { type LocalReference as VariableReference, type LocalParameterReference as ParameterVarReference, type LocalVariableReference as LocalVarReference } from './LocalReference';
 
 import { SpiderModule } from './SpiderModule';

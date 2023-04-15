@@ -1,16 +1,19 @@
 import { InstrList } from "./InstrList";
 import { SpiderFunction } from "./SpiderFunction";
-import { SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory } from "./SpiderImport";
+import { SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
 import { LocalReference } from "./LocalReference";
 import { WasmOpcode, WasmValueType } from "./enums";
 import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderMemory } from "./SpiderMemory";
+import { SpiderType } from "./SpiderType";
+import { SpiderTable } from "./SpiderTable";
 
 export type OpcodeInstArgMapValues = {
     [WasmOpcode.block]: [instr: InstrList, blocktype?: WasmValueType],
     [WasmOpcode.loop]: [instr: InstrList, blocktype?: WasmValueType],
     [WasmOpcode.if]: [instrTrue: InstrList, instrFalse?: InstrList, blocktype?: WasmValueType],
     [WasmOpcode.call]: [func: SpiderFunction | SpiderImportFunction],
+    [WasmOpcode.call_indirect]: [type: SpiderType, table: SpiderTable | SpiderImportTable],
 
     [WasmOpcode.local_get]: [localidx: LocalReference],
     [WasmOpcode.local_set]: [localidx: LocalReference],

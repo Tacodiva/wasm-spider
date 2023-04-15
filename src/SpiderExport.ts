@@ -1,6 +1,7 @@
 import { SpiderFunction } from './SpiderFunction';
 import { SpiderGlobal } from './SpiderGlobal';
 import { SpiderMemory } from './SpiderMemory';
+import { SpiderTable } from './SpiderTable';
 import { WasmExportType } from './enums';
 
 interface ISpiderExport {
@@ -23,4 +24,9 @@ export interface SpiderExportMemory extends ISpiderExport {
     value: SpiderMemory;
 }
 
-export type SpiderExport = SpiderExportFunction | SpiderExportGlobal | SpiderExportMemory;
+export interface SpiderExportTable extends ISpiderExport {
+    type: WasmExportType.table;
+    value: SpiderTable;
+}
+
+export type SpiderExport = SpiderExportFunction | SpiderExportGlobal | SpiderExportMemory | SpiderExportTable;
