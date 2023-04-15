@@ -5,9 +5,10 @@ import { InstrList } from "./InstrList";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
-import { SpiderImportFunction, SpiderImportGlobal } from "./SpiderImport";
+import { SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory } from "./SpiderImport";
 import { LocalReference, LocalReferenceType } from "./LocalReference";
 import { SpiderGlobal } from "./SpiderGlobal";
+import { SpiderMemory } from "./SpiderMemory";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
@@ -38,8 +39,11 @@ const enum WasmBlockOpcode {
 type WasmInstWriter<T extends WasmOpcode> =
     (writer: WasmWriter, opcode: T, ...args: OpcodeInstArgMap[T]) => void;
 
-const wasmInstructionUint32Param =
-    (writer: WasmWriter, _: WasmOpcode, value: number) => writer.writeSLEB128(value);
+const wasmInstructionMemarg =
+    (writer: WasmWriter, _: WasmOpcode, align: number, offset: number) => {
+        writer.writeULEB128(align);
+        writer.writeULEB128(offset);
+    }
 
 const WasmInstuctionWriters = {
     [WasmOpcode.block]: (writer, _, instr, blocktype) => writer.writeBlock(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
@@ -60,6 +64,32 @@ const WasmInstuctionWriters = {
     [WasmOpcode.global_get]: (writer, _, globalidx) => writer.writeGlobalIndex(globalidx),
     [WasmOpcode.global_set]: (writer, _, globalidx) => writer.writeGlobalIndex(globalidx),
 
+    [WasmOpcode.i32_load]: wasmInstructionMemarg,
+    [WasmOpcode.i64_load]: wasmInstructionMemarg,
+    [WasmOpcode.f32_load]: wasmInstructionMemarg,
+    [WasmOpcode.f64_load]: wasmInstructionMemarg,
+    [WasmOpcode.i32_load8_s]: wasmInstructionMemarg,
+    [WasmOpcode.i32_load8_u]: wasmInstructionMemarg,
+    [WasmOpcode.i32_load16_s]: wasmInstructionMemarg,
+    [WasmOpcode.i32_load16_u]: wasmInstructionMemarg,
+    [WasmOpcode.i64_load8_s]: wasmInstructionMemarg,
+    [WasmOpcode.i64_load8_u]: wasmInstructionMemarg,
+    [WasmOpcode.i64_load16_s]: wasmInstructionMemarg,
+    [WasmOpcode.i64_load16_u]: wasmInstructionMemarg,
+    [WasmOpcode.i64_load32_s]: wasmInstructionMemarg,
+    [WasmOpcode.i64_load32_u]: wasmInstructionMemarg,
+    [WasmOpcode.i32_store]: wasmInstructionMemarg,
+    [WasmOpcode.i64_store]: wasmInstructionMemarg,
+    [WasmOpcode.f32_store]: wasmInstructionMemarg,
+    [WasmOpcode.f64_store]: wasmInstructionMemarg,
+    [WasmOpcode.i32_store8]: wasmInstructionMemarg,
+    [WasmOpcode.i32_store16]: wasmInstructionMemarg,
+    [WasmOpcode.i64_store8]: wasmInstructionMemarg,
+    [WasmOpcode.i64_store16]: wasmInstructionMemarg,
+    [WasmOpcode.i64_store32]: wasmInstructionMemarg,
+    [WasmOpcode.memory_size]: (writer, _, memidx) => writer.writeMemoryIndex(memidx),
+    [WasmOpcode.memory_grow]: (writer, _, memidx) => writer.writeMemoryIndex(memidx),
+
     [WasmOpcode.i32_const]: (writer, _, n) => writer.writeSLEB128(n),
     [WasmOpcode.i64_const]: (writer, _, n) => writer.writeSLEB128(n),
     [WasmOpcode.f32_const]: (writer, _, z) => writer.writeF32(z),
@@ -75,6 +105,7 @@ export class WasmWriter extends BinaryWriter {
     private _functionIndexes: Map<SpiderFunction | SpiderImportFunction, number> | null = null;
     private _typeIndexes: Map<SpiderType, number> | null = null;
     private _globalIndexes: Map<SpiderGlobal | SpiderImportGlobal, number> | null = null;
+    private _memoryIndexes: Map<SpiderMemory | SpiderImportMemory, number> | null = null;
 
     public constructor(parent: WasmWriter | null = null) {
         super();
@@ -82,6 +113,7 @@ export class WasmWriter extends BinaryWriter {
         this._functionIndexes = parent?._functionIndexes ?? null;
         this._typeIndexes = parent?._typeIndexes ?? null;
         this._globalIndexes = parent?._globalIndexes ?? null;
+        this._memoryIndexes = parent?._memoryIndexes ?? null;
     }
 
     public writeModule(module: SpiderModule) {
@@ -93,6 +125,7 @@ export class WasmWriter extends BinaryWriter {
         this._typeIndexes = new Map();
         this._functionIndexes = new Map();
         this._globalIndexes = new Map();
+        this._memoryIndexes = new Map();
 
         for (const imprt of module.imports) {
             switch (imprt.importType) {
@@ -101,6 +134,9 @@ export class WasmWriter extends BinaryWriter {
                     break;
                 case WasmImportType.global:
                     this._globalIndexes.set(imprt, this._globalIndexes.size);
+                    break;
+                case WasmImportType.mem:
+                    this._memoryIndexes.set(imprt, this._memoryIndexes.size);
                     break;
             }
         }
@@ -113,6 +149,9 @@ export class WasmWriter extends BinaryWriter {
 
         for (let j = 0; j < module.globals.length; j++)
             this._globalIndexes.set(module.globals[j], this._globalIndexes.size);
+
+        for (let j = 0; j < module.memories.length; j++)
+            this._memoryIndexes.set(module.memories[j], this._memoryIndexes.size);
 
 
         const sectionWriter = new WasmWriter(this);
@@ -161,7 +200,14 @@ export class WasmWriter extends BinaryWriter {
                         break;
                     case WasmImportType.global:
                         sectionWriter.writeUint8(imprt.globalType);
-                        sectionWriter.writeUint8(imprt.globalMutable ? 0x00 : 0x01);
+                        sectionWriter.writeBoolean(imprt.globalMutable);
+                        break;
+                    case WasmImportType.mem:
+                        sectionWriter.writeBoolean(imprt.memoryMaxSize !== undefined);
+                        sectionWriter.writeULEB128(imprt.memoryMinSize);
+                        if (imprt.memoryMaxSize !== undefined)
+                            sectionWriter.writeULEB128(imprt.memoryMaxSize);
+                        break;
                 }
             }
             endSection();
@@ -176,13 +222,26 @@ export class WasmWriter extends BinaryWriter {
             endSection();
         }
 
+        if (module.memories.length !== 0) {
+            // Write the memories section
+            startSection(WasmSectionType.memory);
+            sectionWriter.writeULEB128(module.memories.length);
+            for (const memory of module.memories) {
+                sectionWriter.writeBoolean(memory.maxSize !== undefined);
+                sectionWriter.writeULEB128(memory.minSize);
+                if (memory.maxSize !== undefined)
+                    sectionWriter.writeULEB128(memory.maxSize);
+            }
+            endSection();
+        }
+
         if (module.globals.length !== 0) {
             // Write the global section
             startSection(WasmSectionType.global);
             sectionWriter.writeULEB128(module.globals.length);
             for (const global of module.globals) {
                 sectionWriter.writeUint8(global.type);
-                sectionWriter.writeUint8(global.mutable ? 0x01 : 0x00);
+                sectionWriter.writeBoolean(global.mutable);
                 sectionWriter.writeBlock(global.initalizer);
             }
             endSection();
@@ -201,6 +260,9 @@ export class WasmWriter extends BinaryWriter {
                         break;
                     case WasmExportType.global:
                         sectionWriter.writeGlobalIndex(exprt.value);
+                        break;
+                    case WasmExportType.mem:
+                        sectionWriter.writeMemoryIndex(exprt.value);
                         break;
                 }
             }
@@ -296,6 +358,18 @@ export class WasmWriter extends BinaryWriter {
         if (!this._globalIndexes) throw new Error("Global indexes not allocated.");
         const id = this._globalIndexes.get(global);
         if (id === undefined) throw new Error("Global not a part of the module.");
+        return id;
+    }
+
+    public writeMemoryIndex(memory?: SpiderMemory | SpiderImportMemory) {
+        this.writeULEB128(this.getMemoryIndex(memory));
+    }
+
+    public getMemoryIndex(memory?: SpiderMemory | SpiderImportMemory): number {
+        if (!memory) return 0;
+        if (!this._memoryIndexes) throw new Error("Memory indexes not allocated.");
+        const id = this._memoryIndexes.get(memory);
+        if (id === undefined) throw new Error("Memory not a part of the module.");
         return id;
     }
 }

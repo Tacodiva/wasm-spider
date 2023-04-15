@@ -1,10 +1,11 @@
-import { SpiderExport, SpiderExportFunction, SpiderExportGlobal } from "./SpiderExport";
+import { SpiderExport, SpiderExportFunction, SpiderExportGlobal, SpiderExportMemory } from "./SpiderExport";
 import { SpiderFunction } from "./SpiderFunction";
 import { InstrList } from "./InstrList";
 import { SpiderType } from "./SpiderType";
 import { WasmExportType, WasmImportType, WasmValueType } from "./enums";
-import { SpiderImport, SpiderImportFunction, SpiderImportGlobal } from "./SpiderImport";
+import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory } from "./SpiderImport";
 import { SpiderGlobal } from "./SpiderGlobal";
+import { SpiderMemory } from "./SpiderMemory";
 
 interface SpiderTypeDesc {
     parameters?: WasmValueType[];
@@ -17,6 +18,7 @@ export class SpiderModule {
     public readonly exports: SpiderExport[];
     public readonly imports: SpiderImport[];
     public readonly globals: SpiderGlobal[];
+    public readonly memories: SpiderMemory[];
 
     public constructor() {
         this.types = [];
@@ -24,6 +26,7 @@ export class SpiderModule {
         this.exports = [];
         this.imports = [];
         this.globals = [];
+        this.memories = [];
     }
 
     public createType(parameters: WasmValueType[] = [], ...results: WasmValueType[]): SpiderType {
@@ -62,7 +65,7 @@ export class SpiderModule {
         return imprt;
     }
 
-    public createGlobal(type: WasmValueType, mutable: boolean, value: number) {
+    public createGlobal(type: WasmValueType, mutable: boolean, value: number): SpiderGlobal {
         const global = new SpiderGlobal(this, type, mutable, value);
         this.globals.push(global);
         return global;
@@ -76,6 +79,24 @@ export class SpiderModule {
 
     public exportGlobal(name: string, value: SpiderGlobal): SpiderExportGlobal {
         const exprt: SpiderExportGlobal = { type: WasmExportType.global, name, value };
+        this.exports.push(exprt);
+        return exprt;
+    }
+
+    public createMemory(minSize: number = 0, maxSize?: number): SpiderMemory {
+        const memory = new SpiderMemory(this, minSize, maxSize);
+        this.memories.push(memory);
+        return memory;
+    }
+
+    public importMemory(module: string, name: string, minSize: number = 0, maxSize?: number): SpiderImportMemory {
+        const imprt: SpiderImportMemory = { importType: WasmImportType.mem, name, module, memoryMinSize: minSize, memoryMaxSize: maxSize };
+        this.imports.push(imprt);
+        return imprt;
+    }
+
+    public exportMemory(name: string, value: SpiderMemory): SpiderExportMemory {
+        const exprt: SpiderExportMemory = { type: WasmExportType.mem, name, value };
         this.exports.push(exprt);
         return exprt;
     }

@@ -1,35 +1,43 @@
 import { WasmOpcode, WasmValueType, spider } from "../src";
 
-test('Simple Add', async () => {
+test('Globals', async () => {
     // Create a blank WebAssembly module
     const spiderModule = spider.createModule();
 
     // Create a function
     const addFunction = spiderModule.createFunction({
-        parameters: [WasmValueType.f64],
+        parameters: [],
         results: [WasmValueType.f64]
     });
 
-    const global = spiderModule.createGlobal(WasmValueType.f64, true, 60);
-    spiderModule.exportGlobal("global", global);
+    const moduleGlobal = spiderModule.createGlobal(WasmValueType.f64, true, 60);
+    spiderModule.exportGlobal("global", moduleGlobal);
 
-    expect(global.getValue()).toEqual(60);
+    const importedGlobal = spiderModule.importGlobal("test", "global", WasmValueType.f64, true);
 
-    addFunction.body.emit(WasmOpcode.local_get, 0);
-    addFunction.body.emit(WasmOpcode.global_get, global);
+    expect(moduleGlobal.getValue()).toEqual(60);
+
+    addFunction.body.emit(WasmOpcode.global_get, importedGlobal);
+    addFunction.body.emit(WasmOpcode.global_get, moduleGlobal);
     addFunction.body.emit(WasmOpcode.f64_add);
-    addFunction.body.emit(WasmOpcode.local_get, 0);
-    addFunction.body.emit(WasmOpcode.global_set, global);
+    addFunction.body.emit(WasmOpcode.global_get, importedGlobal);
+    addFunction.body.emit(WasmOpcode.global_set, moduleGlobal);
 
     spiderModule.exportFunction("add", addFunction);
 
     const compiledModule = await spider.compileModule(spiderModule);
 
-    const moduleInstance = await WebAssembly.instantiate(compiledModule);
+    const runtimeImportedGlobal = new WebAssembly.Global({ value: "f64", mutable: true }, 0);
+    const moduleInstance = await WebAssembly.instantiate(compiledModule, {
+        test: {
+            global: runtimeImportedGlobal
+        }
+    });
     const compiledAdd = moduleInstance.exports.add as Function;
     const compiledGlobal = moduleInstance.exports.global as WebAssembly.Global;
 
     expect(compiledGlobal.value).toEqual(60);
-    expect(compiledAdd(9)).toEqual(69);
+    runtimeImportedGlobal.value = 9;
+    expect(compiledAdd()).toEqual(69);
     expect(compiledGlobal.value).toEqual(9);
 });

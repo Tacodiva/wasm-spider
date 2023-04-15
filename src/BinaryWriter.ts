@@ -110,4 +110,8 @@ export class BinaryWriter {
             this.writeUint8(byte);
         }
     }
+
+    public writeBoolean(bool: boolean) {
+        this.writeUint8(bool ? 0x01 : 0x00);
+    }
 }

@@ -3,8 +3,10 @@ export { type SpiderModule } from './SpiderModule';
 export { type ISpiderInstr } from './SpiderInstruction'
 export { type SpiderFunction } from './SpiderFunction';
 export { type SpiderType } from './SpiderType'
-export { type SpiderExport, type SpiderExportFunction } from './SpiderExport';
-export { type SpiderImport, type SpiderImportFunction } from './SpiderImport'
+export { type SpiderGlobal } from './SpiderGlobal';
+export { type SpiderMemory } from './SpiderMemory';
+export { type SpiderExport, type SpiderExportFunction, type SpiderExportGlobal, type SpiderExportMemory } from './SpiderExport';
+export { type SpiderImport, type SpiderImportFunction, type SpiderImportGlobal, type SpiderImportMemory } from './SpiderImport'
 export { type LocalReference as VariableReference, type LocalParameterReference as ParameterVarReference, type LocalVariableReference as LocalVarReference } from './LocalReference';
 
 import { SpiderModule } from './SpiderModule';

@@ -19,4 +19,10 @@ export interface SpiderImportGlobal extends SpiderImportBase {
     globalMutable: boolean
 }
 
-export type SpiderImport = SpiderImportFunction | SpiderImportGlobal;
+export interface SpiderImportMemory extends SpiderImportBase {
+    importType: WasmImportType.mem,
+    memoryMinSize: number,
+    memoryMaxSize: number | undefined
+}
+
+export type SpiderImport = SpiderImportFunction | SpiderImportGlobal | SpiderImportMemory;
