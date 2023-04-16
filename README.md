@@ -21,9 +21,9 @@
         results: [WasmValueType.f64]
     });
 
-    addition.body.emit(WasmOpcode.local_get, 0); // Push the first param onto the stack
-    addition.body.emit(WasmOpcode.local_get, 1); // Push the second param onto the stack
-    addition.body.emit(WasmOpcode.f64_add); // Add the two topmost stack items together
+    addition.body.emit(SpiderOpcodes.local_get, 0); // Push the first param onto the stack
+    addition.body.emit(SpiderOpcodes.local_get, 1); // Push the second param onto the stack
+    addition.body.emit(SpiderOpcodes.f64_add); // Add the two topmost stack items together
 
     // We need to make our function visible to the outside world.
     spiderModule.exportFunction("add", addition);

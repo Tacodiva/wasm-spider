@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
 
@@ -12,10 +12,10 @@ test('Simple Variable Refs + ifelse', async () => {
         parameters: [WasmValueType.f64]
     });
 
-    runCallbackFunc.body.emit(WasmOpcode.local_get, 0);
-    runCallbackFunc.body.emit(WasmOpcode.f64_const, 1);
-    runCallbackFunc.body.emit(WasmOpcode.f64_sub);
-    runCallbackFunc.body.emit(WasmOpcode.call, callbackFunc);
+    runCallbackFunc.body.emit(SpiderOpcodes.local_get, 0);
+    runCallbackFunc.body.emit(SpiderOpcodes.f64_const, 1);
+    runCallbackFunc.body.emit(SpiderOpcodes.f64_sub);
+    runCallbackFunc.body.emit(SpiderOpcodes.call, callbackFunc);
 
     const addFunction = spiderModule.createFunction({
         parameters: [WasmValueType.i32, WasmValueType.i32, WasmValueType.f64],
@@ -25,15 +25,15 @@ test('Simple Variable Refs + ifelse', async () => {
     const initalParam = addFunction.getParameter(2);
     const initalFirstParam = addFunction.getParameter(0);
 
-    addFunction.body.emit(WasmOpcode.local_get, initalParam);
-    addFunction.body.emit(WasmOpcode.f64_const, 0);
-    addFunction.body.emit(WasmOpcode.f64_eq);
+    addFunction.body.emit(SpiderOpcodes.local_get, initalParam);
+    addFunction.body.emit(SpiderOpcodes.f64_const, 0);
+    addFunction.body.emit(SpiderOpcodes.f64_eq);
 
     const ifelse = addFunction.body.emitIfElse(WasmValueType.f64);
 
-    ifelse.instrTrue.emit(WasmOpcode.f64_const, 7729);
-    ifelse.instrTrue.emit(WasmOpcode.f64_const, 70);
-    ifelse.instrTrue.emit(WasmOpcode.call, runCallbackFunc);
+    ifelse.instrTrue.emit(SpiderOpcodes.f64_const, 7729);
+    ifelse.instrTrue.emit(SpiderOpcodes.f64_const, 70);
+    ifelse.instrTrue.emit(SpiderOpcodes.call, runCallbackFunc);
 
     expect(addFunction.type.spliceParameters(0, 2, WasmValueType.i64)).toEqual([WasmValueType.i32, WasmValueType.i32]);
     expect(initalFirstParam.index).toEqual(-1);
@@ -45,9 +45,9 @@ test('Simple Variable Refs + ifelse', async () => {
     expect(initalParam.index).toEqual(0);
     expect(newParam.index).toEqual(1);
 
-    ifelse.instrFalse.emit(WasmOpcode.local_get, newParam);
-    ifelse.instrFalse.emit(WasmOpcode.local_get, initalParam);
-    ifelse.instrFalse.emit(WasmOpcode.f64_add);
+    ifelse.instrFalse.emit(SpiderOpcodes.local_get, newParam);
+    ifelse.instrFalse.emit(SpiderOpcodes.local_get, initalParam);
+    ifelse.instrFalse.emit(SpiderOpcodes.f64_add);
 
     // We need to make our function visible to the outside world.
     spiderModule.exportFunction("add", addFunction);

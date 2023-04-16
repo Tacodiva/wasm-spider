@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
 
@@ -12,10 +12,10 @@ test('Simple Functions', async () => {
         parameters: [WasmValueType.f64]
     });
 
-    runCallbackFunc.body.emit(WasmOpcode.local_get, 0);
-    runCallbackFunc.body.emit(WasmOpcode.f64_const, 1);
-    runCallbackFunc.body.emit(WasmOpcode.f64_sub);
-    runCallbackFunc.body.emit(WasmOpcode.call, callbackFunc);
+    runCallbackFunc.body.emit(SpiderOpcodes.local_get, 0);
+    runCallbackFunc.body.emit(SpiderOpcodes.f64_const, 1);
+    runCallbackFunc.body.emit(SpiderOpcodes.f64_sub);
+    runCallbackFunc.body.emit(SpiderOpcodes.call, callbackFunc);
 
     const addFunction = spiderModule.createFunction({
         parameters: [WasmValueType.f64, WasmValueType.f64],
@@ -24,19 +24,19 @@ test('Simple Functions', async () => {
 
     const ret7729 = new SpiderExpression();
 
-    addFunction.body.emit(WasmOpcode.local_get, 0);
-    addFunction.body.emit(WasmOpcode.f64_const, 0);
-    addFunction.body.emit(WasmOpcode.f64_eq);
+    addFunction.body.emit(SpiderOpcodes.local_get, 0);
+    addFunction.body.emit(SpiderOpcodes.f64_const, 0);
+    addFunction.body.emit(SpiderOpcodes.f64_eq);
 
-    addFunction.body.emit(WasmOpcode.if, ret7729);
-    ret7729.emit(WasmOpcode.f64_const, 7729);
-    ret7729.emit(WasmOpcode.f64_const, 70);
-    ret7729.emit(WasmOpcode.call, runCallbackFunc);
-    ret7729.emit(WasmOpcode.return);
+    addFunction.body.emit(SpiderOpcodes.if, ret7729);
+    ret7729.emit(SpiderOpcodes.f64_const, 7729);
+    ret7729.emit(SpiderOpcodes.f64_const, 70);
+    ret7729.emit(SpiderOpcodes.call, runCallbackFunc);
+    ret7729.emit(SpiderOpcodes.return);
 
-    addFunction.body.emit(WasmOpcode.local_get, 0);
-    addFunction.body.emit(WasmOpcode.local_get, 1);
-    addFunction.body.emit(WasmOpcode.f64_add);
+    addFunction.body.emit(SpiderOpcodes.local_get, 0);
+    addFunction.body.emit(SpiderOpcodes.local_get, 1);
+    addFunction.body.emit(SpiderOpcodes.f64_add);
 
     // We need to make our function visible to the outside world.
     spiderModule.exportFunction("add", addFunction);

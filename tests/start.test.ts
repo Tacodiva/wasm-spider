@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 
 test('Start', async () => {
     const spiderModule = spider.createModule();
@@ -6,7 +6,7 @@ test('Start', async () => {
     const callbackFunction = spiderModule.importFunction("test", "callback", {});
 
     const startFunction = spiderModule.start = spiderModule.createFunction();
-    startFunction.body.emit(WasmOpcode.call, callbackFunction);
+    startFunction.body.emit(SpiderOpcodes.call, callbackFunction);
 
     const compiledModule = await spider.compileModule(spiderModule);
 

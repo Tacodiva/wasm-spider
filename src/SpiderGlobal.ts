@@ -2,7 +2,8 @@ import { SpiderConstExpression } from "./SpiderConstExpression";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderImportGlobal } from "./SpiderImport";
 import { SpiderModule } from "./SpiderModule";
-import { WasmOpcode, WasmValueType } from "./enums";
+import { WasmValueType } from "./enums";
+import { SpiderOpcodes } from "./SpiderOpcode";
 
 export type SpiderGlobal = SpiderGlobalDefinition | SpiderImportGlobal;
 

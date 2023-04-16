@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 
 test('br_table', async () => {
     const spiderModule = spider.createModule();
@@ -13,16 +13,16 @@ test('br_table', async () => {
     let case0 = case1.emitBlock();
     let outerBlock = case0.emitBlock();
 
-    outerBlock.emit(WasmOpcode.local_get, 0);
-    outerBlock.emit(WasmOpcode.br_table, [0, 1], 2);
+    outerBlock.emit(SpiderOpcodes.local_get, 0);
+    outerBlock.emit(SpiderOpcodes.br_table, [0, 1], 2);
 
-    case0.emit(WasmOpcode.i32_const, 69);
-    case0.emit(WasmOpcode.br, 2);
+    case0.emit(SpiderOpcodes.i32_const, 69);
+    case0.emit(SpiderOpcodes.br, 2);
 
-    case1.emit(WasmOpcode.i32_const, 420);
-    case1.emit(WasmOpcode.br, 1);
+    case1.emit(SpiderOpcodes.i32_const, 420);
+    case1.emit(SpiderOpcodes.br, 1);
 
-    defaultCase.emit(WasmOpcode.i32_const, -1);
+    defaultCase.emit(SpiderOpcodes.i32_const, -1);
 
     spiderModule.exportFunction("test", testFunction);
 

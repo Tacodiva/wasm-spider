@@ -1,4 +1,5 @@
-export { WasmOpcode, WasmValueType, SpiderCustomSectionPosition } from './enums';
+export { WasmValueType, SpiderCustomSectionPosition } from './enums';
+export { SpiderOpcodes, type SpiderOpcode } from './SpiderOpcode';
 export { SpiderExpression } from './SpiderExpression';
 export { SpiderConstExpression } from './SpiderConstExpression';
 export { type SpiderModule } from './SpiderModule';

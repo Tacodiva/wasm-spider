@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 
 test('Globals', async () => {
     // Create a blank WebAssembly module
@@ -17,11 +17,11 @@ test('Globals', async () => {
 
     expect(moduleGlobal.value.getAsNumber()).toEqual(60);
 
-    addFunction.body.emit(WasmOpcode.global_get, importedGlobal);
-    addFunction.body.emit(WasmOpcode.global_get, moduleGlobal);
-    addFunction.body.emit(WasmOpcode.f64_add);
-    addFunction.body.emit(WasmOpcode.global_get, importedGlobal);
-    addFunction.body.emit(WasmOpcode.global_set, moduleGlobal);
+    addFunction.body.emit(SpiderOpcodes.global_get, importedGlobal);
+    addFunction.body.emit(SpiderOpcodes.global_get, moduleGlobal);
+    addFunction.body.emit(SpiderOpcodes.f64_add);
+    addFunction.body.emit(SpiderOpcodes.global_get, importedGlobal);
+    addFunction.body.emit(SpiderOpcodes.global_set, moduleGlobal);
 
     spiderModule.exportFunction("add", addFunction);
 

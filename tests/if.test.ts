@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
 
@@ -16,17 +16,17 @@ test('Simple If', async () => {
 
     const ret7729 = new SpiderExpression();
 
-    addFunction.body.emit(WasmOpcode.local_get, 0); // Push the first param onto the stack
-    addFunction.body.emit(WasmOpcode.f64_const, 0);
-    addFunction.body.emit(WasmOpcode.f64_eq);
+    addFunction.body.emit(SpiderOpcodes.local_get, 0); // Push the first param onto the stack
+    addFunction.body.emit(SpiderOpcodes.f64_const, 0);
+    addFunction.body.emit(SpiderOpcodes.f64_eq);
 
-    addFunction.body.emit(WasmOpcode.if, ret7729);
-    ret7729.emit(WasmOpcode.f64_const, 7729);
-    ret7729.emit(WasmOpcode.return);
+    addFunction.body.emit(SpiderOpcodes.if, ret7729);
+    ret7729.emit(SpiderOpcodes.f64_const, 7729);
+    ret7729.emit(SpiderOpcodes.return);
 
-    addFunction.body.emit(WasmOpcode.local_get, 0); // Push the first param onto the stack
-    addFunction.body.emit(WasmOpcode.local_get, 1); // Push the second param onto the stack
-    addFunction.body.emit(WasmOpcode.f64_add); // Add the two topmost stack items together
+    addFunction.body.emit(SpiderOpcodes.local_get, 0); // Push the first param onto the stack
+    addFunction.body.emit(SpiderOpcodes.local_get, 1); // Push the second param onto the stack
+    addFunction.body.emit(SpiderOpcodes.f64_add); // Add the two topmost stack items together
 
     // We need to make our function visible to the outside world.
     spiderModule.exportFunction("add", addFunction);

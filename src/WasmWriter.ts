@@ -1,10 +1,11 @@
 import { BinaryWriter } from "./BinaryWriter";
 import { SpiderFunction } from "./SpiderFunction";
-import { SpiderInstruction, OpcodeInstArgMapValues, OpcodeInstArgMap } from "./SpiderInstruction";
+import { SpiderInstruction } from "./SpiderInstruction";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
-import { SpiderCustomSectionPosition, WasmExportType, WasmImportType, WasmOpcode, WasmValueType } from "./enums";
+import { SpiderCustomSectionPosition, WasmExportType, WasmImportType, WasmValueType } from "./enums";
+import { SpiderOpcodes, SpiderOpcode } from "./SpiderOpcode";
 import { LocalReference, LocalReferenceType } from "./LocalReference";
 import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderMemory } from "./SpiderMemory";
@@ -14,7 +15,7 @@ const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
 
 const WASM_FUNCTYPE = 0x60;
-const WASM_RESULT_TYPE_VOID = 0x40;
+export const WASM_RESULT_TYPE_VOID = 0x40;
 const WASM_TABLE_TYPE_ANY = 0x70;
 
 const enum WasmSectionType {
@@ -32,85 +33,10 @@ const enum WasmSectionType {
     data = 11,
 }
 
-const enum WasmBlockOpcode {
+export const enum WasmBlockOpcode {
     else = 0x05,
     end = 0x0b
 }
-
-type WasmInstWriter<T extends WasmOpcode> =
-    (writer: WasmWriter, opcode: T, ...args: OpcodeInstArgMap[T]) => void;
-
-const wasmInstructionMemarg =
-    (writer: WasmWriter, _: WasmOpcode, align: number, offset: number) => {
-        writer.writeULEB128(align);
-        writer.writeULEB128(offset);
-    }
-
-const WasmInstuctionWriters = {
-    [WasmOpcode.block]: (writer, _, instr, blocktype) => writer.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
-    [WasmOpcode.loop]: (writer, _, instr, blocktype) => writer.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID),
-    [WasmOpcode.if]: (writer, _, instrTrue, instrFalse, blocktype) => {
-        if (instrFalse) {
-            writer.writeExpression(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID, WasmBlockOpcode.else);
-            writer.writeExpression(instrFalse);
-        } else {
-            writer.writeExpression(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID);
-        }
-    },
-    [WasmOpcode.br]: (writer, _, labelidx) => writer.writeULEB128(labelidx),
-    [WasmOpcode.br_if]: (writer, _, labelidx) => writer.writeULEB128(labelidx),
-    [WasmOpcode.br_table]: (writer, _, labels, defaultLabel) => {
-        writer.writeULEB128(labels.length);
-        for (const label of labels) writer.writeULEB128(label);
-        writer.writeULEB128(defaultLabel);
-    },
-    [WasmOpcode.call]: (writer, _, func) => writer.writeFunctionIndex(func),
-    [WasmOpcode.call_indirect]: (writer, _, type, table) => {
-        writer.writeTypeIndex(type);
-        writer.writeTableIndex(table);
-    },
-
-    [WasmOpcode.local_get]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
-    [WasmOpcode.local_set]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
-    [WasmOpcode.local_tee]: (writer, _, localidx) => writer.writeLocalIndex(localidx),
-    [WasmOpcode.global_get]: (writer, _, globalidx) => writer.writeGlobalIndex(globalidx),
-    [WasmOpcode.global_set]: (writer, _, globalidx) => writer.writeGlobalIndex(globalidx),
-
-    [WasmOpcode.i32_load]: wasmInstructionMemarg,
-    [WasmOpcode.i64_load]: wasmInstructionMemarg,
-    [WasmOpcode.f32_load]: wasmInstructionMemarg,
-    [WasmOpcode.f64_load]: wasmInstructionMemarg,
-    [WasmOpcode.i32_load8_s]: wasmInstructionMemarg,
-    [WasmOpcode.i32_load8_u]: wasmInstructionMemarg,
-    [WasmOpcode.i32_load16_s]: wasmInstructionMemarg,
-    [WasmOpcode.i32_load16_u]: wasmInstructionMemarg,
-    [WasmOpcode.i64_load8_s]: wasmInstructionMemarg,
-    [WasmOpcode.i64_load8_u]: wasmInstructionMemarg,
-    [WasmOpcode.i64_load16_s]: wasmInstructionMemarg,
-    [WasmOpcode.i64_load16_u]: wasmInstructionMemarg,
-    [WasmOpcode.i64_load32_s]: wasmInstructionMemarg,
-    [WasmOpcode.i64_load32_u]: wasmInstructionMemarg,
-    [WasmOpcode.i32_store]: wasmInstructionMemarg,
-    [WasmOpcode.i64_store]: wasmInstructionMemarg,
-    [WasmOpcode.f32_store]: wasmInstructionMemarg,
-    [WasmOpcode.f64_store]: wasmInstructionMemarg,
-    [WasmOpcode.i32_store8]: wasmInstructionMemarg,
-    [WasmOpcode.i32_store16]: wasmInstructionMemarg,
-    [WasmOpcode.i64_store8]: wasmInstructionMemarg,
-    [WasmOpcode.i64_store16]: wasmInstructionMemarg,
-    [WasmOpcode.i64_store32]: wasmInstructionMemarg,
-    [WasmOpcode.memory_size]: (writer, _, memidx) => writer.writeMemoryIndex(memidx),
-    [WasmOpcode.memory_grow]: (writer, _, memidx) => writer.writeMemoryIndex(memidx),
-
-    [WasmOpcode.i32_const]: (writer, _, n) => writer.writeSLEB128(n),
-    [WasmOpcode.i64_const]: (writer, _, n) => writer.writeSLEB128(n),
-    [WasmOpcode.f32_const]: (writer, _, z) => writer.writeF32(z),
-    [WasmOpcode.f64_const]: (writer, _, z) => writer.writeF64(z),
-} satisfies {
-        [K in keyof OpcodeInstArgMapValues]: WasmInstWriter<K>
-    } as {
-        [K in WasmOpcode]: K extends keyof OpcodeInstArgMapValues ? WasmInstWriter<K> : undefined
-    };
 
 export interface SpiderConfig {
     readonly mergeTypes: boolean;
@@ -433,12 +359,11 @@ export class WasmWriter extends BinaryWriter {
         this.writeUint8(terminator);
     }
 
-    public writeInstruction<T extends WasmOpcode>(inst: SpiderInstruction<T>) {
+    public writeInstruction<T extends any[] | []>(inst: SpiderInstruction<T>) {
         if (this._module == null)
             throw new Error("Not currently writing a module");
-        this.writeUint8(inst.opcode);
-        const writer = WasmInstuctionWriters[inst.opcode] as WasmInstWriter<T> | undefined;
-        if (writer) writer(this, inst.opcode, ...inst.args);
+        this.writeUint8(inst.opcode.primaryOpcode);
+        if (inst.opcode.binarySerializer) inst.opcode.binarySerializer(this, ...inst.args);
     }
 
     public writeName(value: string) {

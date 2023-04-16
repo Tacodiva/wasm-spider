@@ -1,4 +1,4 @@
-import { SpiderImportTable, SpiderModule, SpiderTable, WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderImportTable, SpiderModule, SpiderTable, SpiderOpcodes, WasmValueType, spider } from "../src";
 import fs from 'fs';
 
 describe("Tables", () => {
@@ -8,18 +8,18 @@ describe("Tables", () => {
             results: [WasmValueType.f64]
         })
 
-        addFunction.body.emit(WasmOpcode.local_get, 0);
-        addFunction.body.emit(WasmOpcode.local_get, 1);
-        addFunction.body.emit(WasmOpcode.f64_add);
+        addFunction.body.emit(SpiderOpcodes.local_get, 0);
+        addFunction.body.emit(SpiderOpcodes.local_get, 1);
+        addFunction.body.emit(SpiderOpcodes.f64_add);
 
         const subtractFunction = spiderModule.createFunction({
             parameters: [WasmValueType.f64, WasmValueType.f64],
             results: [WasmValueType.f64]
         })
 
-        subtractFunction.body.emit(WasmOpcode.local_get, 0);
-        subtractFunction.body.emit(WasmOpcode.local_get, 1);
-        subtractFunction.body.emit(WasmOpcode.f64_sub);
+        subtractFunction.body.emit(SpiderOpcodes.local_get, 0);
+        subtractFunction.body.emit(SpiderOpcodes.local_get, 1);
+        subtractFunction.body.emit(SpiderOpcodes.f64_sub);
 
         spiderModule.createElement(table, 0, [addFunction, subtractFunction]);
 
@@ -29,10 +29,10 @@ describe("Tables", () => {
         });
         spiderModule.exportFunction("multifunc", multiFunction);
 
-        multiFunction.body.emit(WasmOpcode.local_get, 1);
-        multiFunction.body.emit(WasmOpcode.local_get, 2);
-        multiFunction.body.emit(WasmOpcode.local_get, 0);
-        multiFunction.body.emit(WasmOpcode.call_indirect, addFunction.type, table);
+        multiFunction.body.emit(SpiderOpcodes.local_get, 1);
+        multiFunction.body.emit(SpiderOpcodes.local_get, 2);
+        multiFunction.body.emit(SpiderOpcodes.local_get, 0);
+        multiFunction.body.emit(SpiderOpcodes.call_indirect, addFunction.type, table);
     }
 
     test('Export', async () => {

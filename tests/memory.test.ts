@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 
 describe("Memory", () => {
     function createModule() {
@@ -8,14 +8,14 @@ describe("Memory", () => {
         addFunction.body.emitConstant(WasmValueType.i32, 0);
 
         addFunction.body.emitConstant(WasmValueType.i32, 0);
-        addFunction.body.emit(WasmOpcode.f64_load, 3, 0);
+        addFunction.body.emit(SpiderOpcodes.f64_load, 3, 0);
 
         addFunction.body.emitConstant(WasmValueType.i32, 0);
-        addFunction.body.emit(WasmOpcode.f64_load, 3, 8);
+        addFunction.body.emit(SpiderOpcodes.f64_load, 3, 8);
 
-        addFunction.body.emit(WasmOpcode.f64_add);
+        addFunction.body.emit(SpiderOpcodes.f64_add);
 
-        addFunction.body.emit(WasmOpcode.f64_store, 3, 0);
+        addFunction.body.emit(SpiderOpcodes.f64_store, 3, 0);
 
         spiderModule.exportFunction("add", addFunction);
 

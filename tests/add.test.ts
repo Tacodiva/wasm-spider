@@ -1,4 +1,4 @@
-import { WasmOpcode, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, WasmValueType, spider } from "../src";
 
 test('Simple Add', async () => {
     const spiderModule = spider.createModule();
@@ -8,9 +8,9 @@ test('Simple Add', async () => {
         results: [WasmValueType.f64]
     });
 
-    addFunction.body.emit(WasmOpcode.local_get, 0);
-    addFunction.body.emit(WasmOpcode.local_get, 1);
-    addFunction.body.emit(WasmOpcode.f64_add);
+    addFunction.body.emit(SpiderOpcodes.local_get, 0);
+    addFunction.body.emit(SpiderOpcodes.local_get, 1);
+    addFunction.body.emit(SpiderOpcodes.f64_add);
 
     spiderModule.exportFunction("add", addFunction);
 
