@@ -14,17 +14,18 @@ export { type SpiderCustomSectionDefinition, type SpiderCustomSection } from './
 export { type SpiderExport, type SpiderExportFunction, type SpiderExportGlobal, type SpiderExportMemory, type SpiderExportTable } from './SpiderExport';
 export { type SpiderImport, type SpiderImportFunction, type SpiderImportGlobal, type SpiderImportMemory, type SpiderImportTable } from './SpiderImport'
 export { type LocalReference, type LocalParameterReference, type LocalVariableReference } from './LocalReference';
+export { type SpiderConfig } from './WasmWriter';
 
 import { SpiderModule } from './SpiderModule';
-import { WasmWriter } from './WasmWriter';
+import { SpiderConfig, WasmWriter } from './WasmWriter';
 
 export namespace spider {
     export const createModule = function (): SpiderModule {
         return new SpiderModule();
     }
 
-    export const writeModule = function (module: SpiderModule): ArrayBuffer {
-        const writer = new WasmWriter();
+    export const writeModule = function (module: SpiderModule, cfg: Partial<SpiderConfig> = {}): ArrayBuffer {
+        const writer = new WasmWriter(cfg);
         writer.writeModule(module);
         return writer.toBuffer().buffer;
     }

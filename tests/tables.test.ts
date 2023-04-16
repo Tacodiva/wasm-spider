@@ -1,5 +1,5 @@
 import { SpiderImportTable, SpiderModule, SpiderTable, WasmOpcode, WasmValueType, spider } from "../src";
-import { SpiderExpression } from "../src/SpiderExpression";
+import fs from 'fs';
 
 describe("Tables", () => {
     function poppulateModule(spiderModule: SpiderModule, table: SpiderTable) {
@@ -43,7 +43,9 @@ describe("Tables", () => {
 
         poppulateModule(spiderModule, table);
 
-        const compiledModule = await spider.compileModule(spiderModule);
+        const moduleBuffer = spider.writeModule(spiderModule);
+        fs.writeFileSync("tests/out/tables.wasm", new DataView(moduleBuffer));
+        const compiledModule = await WebAssembly.compile(moduleBuffer);
         const moduleInstance = await WebAssembly.instantiate(compiledModule, {});
         expect(moduleInstance.exports.table).toBeTruthy();
 

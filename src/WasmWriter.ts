@@ -112,7 +112,13 @@ const WasmInstuctionWriters = {
         [K in WasmOpcode]: K extends keyof OpcodeInstArgMapValues ? WasmInstWriter<K> : undefined
     };
 
+export interface SpiderConfig {
+    readonly mergeTypes: boolean;
+}
+
 export class WasmWriter extends BinaryWriter {
+    public readonly config: SpiderConfig;
+
     private _module: SpiderModule | null = null;
     private _functionIndexes: Map<SpiderFunction, number> | null = null;
     private _typeIndexes: Map<SpiderType, number> | null = null;
@@ -120,8 +126,11 @@ export class WasmWriter extends BinaryWriter {
     private _memoryIndexes: Map<SpiderMemory, number> | null = null;
     private _tableIndexes: Map<SpiderTable, number> | null = null;
 
-    public constructor(parent: WasmWriter | null = null) {
+    public constructor(config: Partial<SpiderConfig>, parent: WasmWriter | null = null) {
         super();
+        this.config = {
+            mergeTypes: config.mergeTypes ?? true
+        };
         this._module = parent?._module ?? null;
         this._functionIndexes = parent?._functionIndexes ?? null;
         this._typeIndexes = parent?._typeIndexes ?? null;
@@ -159,8 +168,39 @@ export class WasmWriter extends BinaryWriter {
             }
         }
 
-        for (let i = 0; i < module.types.length; i++)
-            this._typeIndexes.set(module.types[i], i);
+        let mergedTypes: SpiderType[] | null = null;
+        if (this.config.mergeTypes) {
+            // TODO This could definitly be faster but I can't be bothered
+            // TODO Unit test this when we can read WASM modules back in
+            mergedTypes = [];
+            types: for (let i = 0; i < module.types.length; i++) {
+                const type = module.types[i];
+                compare: for (let j = 0; j < mergedTypes.length; j++) {
+                    const typeCompare = mergedTypes[j];
+
+                    if (type.parameters.length !== typeCompare.parameters.length)
+                        continue;
+                    if (type.results.length !== typeCompare.results.length)
+                        continue;
+                    for (let k = 0; k < type.parameters.length; k++) {
+                        if (type.parameters[j] !== typeCompare.parameters[j])
+                            continue compare;
+                    }
+                    for (let k = 0; k < type.results.length; k++) {
+                        if (type.results[j] !== typeCompare.results[j])
+                            continue compare;
+                    }
+
+                    this._typeIndexes.set(type, j);
+                    continue types;
+                }
+                this._typeIndexes.set(type, mergedTypes.length);
+                mergedTypes.push(type);
+            }
+        } else {
+            for (let i = 0; i < module.types.length; i++)
+                this._typeIndexes.set(module.types[i], i);
+        }
 
         for (let j = 0; j < module.functions.length; j++)
             this._functionIndexes.set(module.functions[j], this._functionIndexes.size);
@@ -175,8 +215,8 @@ export class WasmWriter extends BinaryWriter {
             this._tableIndexes.set(module.tables[j], this._tableIndexes.size);
 
 
-        const sectionWriter = new WasmWriter(this);
-        const startSection = (type: WasmSectionType) => {
+        const sectionWriter = new WasmWriter(this.config, this);
+        const beginSection = (type: WasmSectionType) => {
             sectionWriter.reset();
             this.writeUint8(type);
         }
@@ -193,7 +233,7 @@ export class WasmWriter extends BinaryWriter {
             const sections = module.customSections[position];
             if (!sections) return;
             for (const section of sections) {
-                startSection(WasmSectionType.custom);
+                beginSection(WasmSectionType.custom);
                 sectionWriter.writeName(section.name);
                 sectionWriter.write(section.buffer);
                 endSection();
@@ -204,9 +244,10 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.types.length !== 0) {
             // Write the type section
-            startSection(WasmSectionType.type);
-            sectionWriter.writeULEB128(module.types.length);
-            for (const type of module.types) {
+            beginSection(WasmSectionType.type);
+            let types = mergedTypes ?? module.types;
+            sectionWriter.writeULEB128(types.length);
+            for (let type of types) {
                 sectionWriter.writeUint8(WASM_FUNCTYPE);
 
                 sectionWriter.writeULEB128(type.parameters.length);
@@ -223,7 +264,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.imports.length !== 0) {
             // Write the imports section
-            startSection(WasmSectionType.import);
+            beginSection(WasmSectionType.import);
             sectionWriter.writeULEB128(module.imports.length);
             for (const imprt of module.imports) {
                 sectionWriter.writeName(imprt.module);
@@ -252,7 +293,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.functions.length !== 0) {
             // Write the function section
-            startSection(WasmSectionType.function);
+            beginSection(WasmSectionType.function);
             sectionWriter.writeULEB128(module.functions.length);
             for (const func of module.functions)
                 sectionWriter.writeTypeIndex(func.type);
@@ -262,7 +303,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.tables.length !== 0) {
             // Write the table section
-            startSection(WasmSectionType.table);
+            beginSection(WasmSectionType.table);
             sectionWriter.writeULEB128(module.tables.length);
             for (const table of module.tables) {
                 sectionWriter.writeUint8(WASM_TABLE_TYPE_ANY);
@@ -274,7 +315,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.memories.length !== 0) {
             // Write the memories section
-            startSection(WasmSectionType.memory);
+            beginSection(WasmSectionType.memory);
             sectionWriter.writeULEB128(module.memories.length);
             for (const memory of module.memories) {
                 sectionWriter.writeLimits(memory.minSize, memory.maxSize);
@@ -285,7 +326,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.globals.length !== 0) {
             // Write the global section
-            startSection(WasmSectionType.global);
+            beginSection(WasmSectionType.global);
             sectionWriter.writeULEB128(module.globals.length);
             for (const global of module.globals) {
                 sectionWriter.writeUint8(global.type);
@@ -298,7 +339,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.exports.length !== 0) {
             // Write the export section
-            startSection(WasmSectionType.export);
+            beginSection(WasmSectionType.export);
             sectionWriter.writeULEB128(module.exports.length);
             for (const exprt of module.exports) {
                 sectionWriter.writeName(exprt.name);
@@ -324,7 +365,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.start !== null) {
             // Write the start section
-            startSection(WasmSectionType.start);
+            beginSection(WasmSectionType.start);
             sectionWriter.writeFunctionIndex(module.start);
             endSection();
         }
@@ -332,7 +373,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.elements.length !== 0) {
             // Write the elements section
-            startSection(WasmSectionType.element);
+            beginSection(WasmSectionType.element);
             sectionWriter.writeULEB128(module.elements.length);
             for (const element of module.elements) {
                 sectionWriter.writeTableIndex(element.table);
@@ -347,9 +388,9 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.functions.length !== 0) {
             // Write the code section
-            startSection(WasmSectionType.code);
+            beginSection(WasmSectionType.code);
 
-            const codeWriter = new WasmWriter(this);
+            const codeWriter = new WasmWriter(this.config, this);
 
             sectionWriter.writeULEB128(module.functions.length);
             for (const func of module.functions) {
@@ -372,7 +413,7 @@ export class WasmWriter extends BinaryWriter {
 
         if (module.data.length !== 0) {
             // Write the data section
-            startSection(WasmSectionType.data);
+            beginSection(WasmSectionType.data);
             sectionWriter.writeULEB128(module.data.length);
             for (const data of module.data) {
                 sectionWriter.writeMemoryIndex(data.memory);
