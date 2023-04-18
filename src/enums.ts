@@ -10,7 +10,11 @@ export enum SpiderReferenceType {
     externref = 0x6F
 }
 
-export type SpiderValueType = SpiderNumberType | SpiderReferenceType;
+export enum SpiderVectorType {
+    v128 = 0x7B
+}
+
+export type SpiderValueType = SpiderNumberType | SpiderReferenceType | SpiderVectorType;
 
 export enum SpiderCustomSectionPosition {
     AFTER_HEADER,

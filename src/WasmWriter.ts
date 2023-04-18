@@ -365,7 +365,7 @@ export class WasmWriter extends BinaryWriter {
         if (module.data.length !== 0) {
             beginSection(WasmSectionType.dataCount);
             sectionWriter.writeULEB128(module.data.length);
-            endSection();            
+            endSection();
         }
         writeCustomSections(SpiderCustomSectionPosition.AFTER_DATA_COUNT);
 
