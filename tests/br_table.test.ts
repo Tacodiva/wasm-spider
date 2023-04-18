@@ -1,14 +1,15 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
+import { SpiderNumberType } from "../src/enums";
 
 test('br_table', async () => {
     const spiderModule = spider.createModule();
 
     const testFunction = spiderModule.createFunction({
-        parameters: [WasmValueType.i32],
-        results: [WasmValueType.i32]
+        parameters: [SpiderNumberType.i32],
+        results: [SpiderNumberType.i32]
     });
 
-    let defaultCase = testFunction.body.emitBlock(WasmValueType.i32);
+    let defaultCase = testFunction.body.emitBlock(SpiderNumberType.i32);
     let case1 = defaultCase.emitBlock();
     let case0 = case1.emitBlock();
     let outerBlock = case0.emitBlock();

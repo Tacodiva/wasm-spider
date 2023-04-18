@@ -1,26 +1,26 @@
 import { MutableLocalParameterReference, LocalParameterReference, LocalReferenceType } from "./LocalReference";
 import { SpiderModule } from "./SpiderModule";
-import { WasmValueType } from "./enums";
+import { SpiderValueType } from "./enums";
 
 export type SpiderType = SpiderTypeDefinition;
 
 export class SpiderTypeDefinition {
 
-    private readonly _parameters: WasmValueType[];
+    private readonly _parameters: SpiderValueType[];
     private _paramRefs: (MutableLocalParameterReference | undefined)[];
 
-    public get parameters(): readonly WasmValueType[] { return this._parameters; }
-    public readonly results: readonly WasmValueType[];
+    public get parameters(): readonly SpiderValueType[] { return this._parameters; }
+    public readonly results: readonly SpiderValueType[];
     public readonly module: SpiderModule;
 
-    public constructor(module: SpiderModule, parameters: WasmValueType[], results: WasmValueType[]) {
+    public constructor(module: SpiderModule, parameters: SpiderValueType[], results: SpiderValueType[]) {
         this.module = module;
         this.results = results;
         this._parameters = parameters;
         this._paramRefs = [];
     }
 
-    public addParameter(type: WasmValueType): LocalParameterReference {
+    public addParameter(type: SpiderValueType): LocalParameterReference {
         const index = this._parameters.push(type) - 1;
         const ref: MutableLocalParameterReference = { refType: LocalReferenceType.PARAM, type: this, index, value: type };
         this._paramRefs.push(ref);
@@ -41,7 +41,7 @@ export class SpiderTypeDefinition {
         return ref.index;
     }
 
-    public spliceParameters(start: number, deleteCount: number, ...items: WasmValueType[]): WasmValueType[] {
+    public spliceParameters(start: number, deleteCount: number, ...items: SpiderValueType[]): SpiderValueType[] {
         const spliced = this._parameters.splice(start, deleteCount, ...items);
         for (const ref of this._paramRefs.splice(start, deleteCount, ...new Array(items.length)))
             if (ref) ref.index = -1;

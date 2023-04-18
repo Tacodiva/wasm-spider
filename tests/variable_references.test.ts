@@ -1,15 +1,16 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
 import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
+import { SpiderNumberType } from "../src/enums";
 
 test('Simple Variable Refs + ifelse', async () => {
     // Create a blank WebAssembly module
     const spiderModule = spider.createModule();
 
-    const callbackFunc = spiderModule.importFunction("test", "callback", { parameters: [WasmValueType.f64] });
+    const callbackFunc = spiderModule.importFunction("test", "callback", { parameters: [SpiderNumberType.f64] });
 
     const runCallbackFunc = spiderModule.createFunction({
-        parameters: [WasmValueType.f64]
+        parameters: [SpiderNumberType.f64]
     });
 
     runCallbackFunc.body.emit(SpiderOpcodes.local_get, 0);
@@ -18,8 +19,8 @@ test('Simple Variable Refs + ifelse', async () => {
     runCallbackFunc.body.emit(SpiderOpcodes.call, callbackFunc);
 
     const addFunction = spiderModule.createFunction({
-        parameters: [WasmValueType.i32, WasmValueType.i32, WasmValueType.f64],
-        results: [WasmValueType.f64]
+        parameters: [SpiderNumberType.i32, SpiderNumberType.i32, SpiderNumberType.f64],
+        results: [SpiderNumberType.f64]
     });
 
     const initalParam = addFunction.getParameter(2);
@@ -29,19 +30,19 @@ test('Simple Variable Refs + ifelse', async () => {
     addFunction.body.emit(SpiderOpcodes.f64_const, 0);
     addFunction.body.emit(SpiderOpcodes.f64_eq);
 
-    const ifelse = addFunction.body.emitIfElse(WasmValueType.f64);
+    const ifelse = addFunction.body.emitIfElse(SpiderNumberType.f64);
 
     ifelse.instrTrue.emit(SpiderOpcodes.f64_const, 7729);
     ifelse.instrTrue.emit(SpiderOpcodes.f64_const, 70);
     ifelse.instrTrue.emit(SpiderOpcodes.call, runCallbackFunc);
 
-    expect(addFunction.type.spliceParameters(0, 2, WasmValueType.i64)).toEqual([WasmValueType.i32, WasmValueType.i32]);
+    expect(addFunction.type.spliceParameters(0, 2, SpiderNumberType.i64)).toEqual([SpiderNumberType.i32, SpiderNumberType.i32]);
     expect(initalFirstParam.index).toEqual(-1);
     expect(initalParam.index).toEqual(1);
-    expect(addFunction.parameters).toEqual([WasmValueType.i64, WasmValueType.f64]);
-    expect(addFunction.type.spliceParameters(0, 1)).toEqual([WasmValueType.i64]);
+    expect(addFunction.parameters).toEqual([SpiderNumberType.i64, SpiderNumberType.f64]);
+    expect(addFunction.type.spliceParameters(0, 1)).toEqual([SpiderNumberType.i64]);
     expect(initalParam.index).toEqual(0);
-    const newParam = addFunction.addParameter(WasmValueType.f64);
+    const newParam = addFunction.addParameter(SpiderNumberType.f64);
     expect(initalParam.index).toEqual(0);
     expect(newParam.index).toEqual(1);
 

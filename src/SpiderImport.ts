@@ -1,32 +1,33 @@
 import { SpiderGlobalDefinition } from "./SpiderGlobal";
 import { SpiderTypeDefinition } from "./SpiderType";
-import { WasmImportType, WasmValueType } from "./enums";
+import { SpiderImportType, SpiderReferenceType, SpiderValueType } from "./enums";
 
 interface SpiderImportBase {
-    importType: WasmImportType;
+    importType: SpiderImportType;
     name: string;
     module: string;
 }
 
 export interface SpiderImportFunction extends SpiderImportBase {
-    importType: WasmImportType.func,
+    importType: SpiderImportType.func,
     type: SpiderTypeDefinition
 }
 
 export interface SpiderImportGlobal extends SpiderImportBase {
-    importType: WasmImportType.global,
-    type: WasmValueType,
+    importType: SpiderImportType.global,
+    type: SpiderValueType,
     mutable: boolean
 }
 
 export interface SpiderImportMemory extends SpiderImportBase {
-    importType: WasmImportType.mem,
+    importType: SpiderImportType.mem,
     minSize: number,
     maxSize: number | undefined
 }
 
 export interface SpiderImportTable extends SpiderImportBase {
-    importType: WasmImportType.table,
+    importType: SpiderImportType.table,
+    type: SpiderReferenceType,
     minSize: number,
     maxSize: number | undefined
 }

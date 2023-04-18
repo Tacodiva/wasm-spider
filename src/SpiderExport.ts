@@ -2,30 +2,30 @@ import { SpiderFunctionDefinition } from './SpiderFunction';
 import { SpiderGlobalDefinition } from './SpiderGlobal';
 import { SpiderMemoryDefinition } from './SpiderMemory';
 import { SpiderTableDefinition } from './SpiderTable';
-import { WasmExportType } from './enums';
+import { SpiderExportType } from './enums';
 
-interface ISpiderExport {
-    type: WasmExportType;
+interface SpiderExportBase {
+    type: SpiderExportType;
     name: string;
 }
 
-export interface SpiderExportFunction extends ISpiderExport {
-    type: WasmExportType.func;
+export interface SpiderExportFunction extends SpiderExportBase {
+    type: SpiderExportType.func;
     value: SpiderFunctionDefinition
 }
 
-export interface SpiderExportGlobal extends ISpiderExport {
-    type: WasmExportType.global;
+export interface SpiderExportGlobal extends SpiderExportBase {
+    type: SpiderExportType.global;
     value: SpiderGlobalDefinition;
 }
 
-export interface SpiderExportMemory extends ISpiderExport {
-    type: WasmExportType.mem;
+export interface SpiderExportMemory extends SpiderExportBase {
+    type: SpiderExportType.mem;
     value: SpiderMemoryDefinition;
 }
 
-export interface SpiderExportTable extends ISpiderExport {
-    type: WasmExportType.table;
+export interface SpiderExportTable extends SpiderExportBase {
+    type: SpiderExportType.table;
     value: SpiderTableDefinition;
 }
 

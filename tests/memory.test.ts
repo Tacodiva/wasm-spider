@@ -1,16 +1,17 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
+import { SpiderNumberType } from "../src/enums";
 
 describe("Memory", () => {
     function createModule() {
         const spiderModule = spider.createModule();
 
         const addFunction = spiderModule.createFunction();
-        addFunction.body.emitConstant(WasmValueType.i32, 0);
+        addFunction.body.emitConstant(SpiderNumberType.i32, 0);
 
-        addFunction.body.emitConstant(WasmValueType.i32, 0);
+        addFunction.body.emitConstant(SpiderNumberType.i32, 0);
         addFunction.body.emit(SpiderOpcodes.f64_load, 3, 0);
 
-        addFunction.body.emitConstant(WasmValueType.i32, 0);
+        addFunction.body.emitConstant(SpiderNumberType.i32, 0);
         addFunction.body.emit(SpiderOpcodes.f64_load, 3, 8);
 
         addFunction.body.emit(SpiderOpcodes.f64_add);

@@ -1,11 +1,12 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
+import { SpiderNumberType } from "../src/enums";
 
 test('Simple Add', async () => {
     const spiderModule = spider.createModule();
 
     const addFunction = spiderModule.createFunction({
-        parameters: [WasmValueType.f64, WasmValueType.f64],
-        results: [WasmValueType.f64]
+        parameters: [SpiderNumberType.f64, SpiderNumberType.f64],
+        results: [SpiderNumberType.f64]
     });
 
     addFunction.body.emit(SpiderOpcodes.local_get, 0);

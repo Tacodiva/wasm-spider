@@ -1,4 +1,4 @@
-export { WasmValueType, SpiderCustomSectionPosition } from './enums';
+export { SpiderValueType, SpiderNumberType, SpiderReferenceType, SpiderCustomSectionPosition, type SpiderExportType, type SpiderImportType } from './enums';
 export { SpiderOpcodes, type SpiderOpcode } from './SpiderOpcode';
 export { SpiderExpression } from './SpiderExpression';
 export { SpiderConstExpression } from './SpiderConstExpression';
@@ -9,8 +9,8 @@ export { type SpiderTypeDefinition, type SpiderType } from './SpiderType'
 export { type SpiderGlobalDefinition, type SpiderGlobal } from './SpiderGlobal';
 export { type SpiderMemoryDefinition, type SpiderMemory } from './SpiderMemory';
 export { type SpiderTableDefinition, type SpiderTable } from './SpiderTable';
-export { type SpiderElementDefinition, type SpiderElement } from './SpiderElement';
-export { type SpiderDataDefinition, type SpiderData } from './SpiderData';
+export { type SpiderElementFuncIdxActive, type SpiderElementFuncIdxInactive, type SpiderElementExprActive, type SpiderElementExprInactive, type SpiderElement } from './SpiderElement';
+export { type SpiderDataActiveDef, type SpiderDataPassiveDef, type SpiderData } from './SpiderData';
 export { type SpiderCustomSectionDefinition, type SpiderCustomSection } from './SpiderCustomSection';
 export { type SpiderExport, type SpiderExportFunction, type SpiderExportGlobal, type SpiderExportMemory, type SpiderExportTable } from './SpiderExport';
 export { type SpiderImport, type SpiderImportFunction, type SpiderImportGlobal, type SpiderImportMemory, type SpiderImportTable } from './SpiderImport'

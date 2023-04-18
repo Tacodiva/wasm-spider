@@ -3,7 +3,7 @@ import { LocalParameterReference, LocalVariableReference, MutableLocalVariableRe
 import { SpiderImportFunction } from "./SpiderImport";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderTypeDefinition } from "./SpiderType";
-import { WasmValueType } from "./enums";
+import { SpiderValueType } from "./enums";
 
 export type SpiderFunction = SpiderFunctionDefinition | SpiderImportFunction;
 
@@ -12,15 +12,15 @@ export class SpiderFunctionDefinition {
 
     public readonly body: SpiderExpression;
 
-    private readonly _localVariables: WasmValueType[];
-    public get localVariables(): readonly WasmValueType[] { return this._localVariables; }
+    private readonly _localVariables: SpiderValueType[];
+    public get localVariables(): readonly SpiderValueType[] { return this._localVariables; }
     private _localVariableRefs: (MutableLocalVariableReference | undefined)[];
 
     public readonly type: SpiderTypeDefinition;
-    public get parameters(): readonly WasmValueType[] { return this.type.parameters; }
-    public get results(): readonly WasmValueType[] { return this.type.results; }
+    public get parameters(): readonly SpiderValueType[] { return this.type.parameters; }
+    public get results(): readonly SpiderValueType[] { return this.type.results; }
 
-    public constructor(module: SpiderModule, type: SpiderTypeDefinition, vars: WasmValueType[] = [], body: SpiderExpression = new SpiderExpression()) {
+    public constructor(module: SpiderModule, type: SpiderTypeDefinition, vars: SpiderValueType[] = [], body: SpiderExpression = new SpiderExpression()) {
         this.module = module;
         this.type = type;
         this._localVariables = vars;
@@ -28,7 +28,7 @@ export class SpiderFunctionDefinition {
         this._localVariableRefs = [];
     }
 
-    public addParameter(type: WasmValueType): LocalParameterReference {
+    public addParameter(type: SpiderValueType): LocalParameterReference {
         return this.type.addParameter(type);
     }
 
@@ -36,7 +36,7 @@ export class SpiderFunctionDefinition {
         return this.type.getParameter(index);
     }
 
-    public addLocalVariable(type: WasmValueType): LocalVariableReference {
+    public addLocalVariable(type: SpiderValueType): LocalVariableReference {
         const index = this._localVariables.push(type) - 1;
         const ref: MutableLocalVariableReference = { refType: LocalReferenceType.LOCAL, func: this, index, value: type };
         this._localVariableRefs.push(ref);
@@ -57,7 +57,7 @@ export class SpiderFunctionDefinition {
         return ref.index;
     }
 
-    public spliceLocalVariables(start: number, deleteCount: number, ...items: WasmValueType[]): WasmValueType[] {
+    public spliceLocalVariables(start: number, deleteCount: number, ...items: SpiderValueType[]): SpiderValueType[] {
         const spliced = this._localVariables.splice(start, deleteCount, ...items);
         for (const ref of this._localVariableRefs.splice(start, deleteCount, ...new Array(items.length)))
             if (ref) ref.index = -1;

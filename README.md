@@ -16,9 +16,9 @@
     // Create a function
     const addition = spiderModule.createFunction({
         // Our function has two parameters, both 64-bit floats
-        parameters: [WasmValueType.f64, WasmValueType.f64],
+        parameters: [SpiderNumberType.f64, SpiderNumberType.f64],
         // And it returns a 64-bit float
-        results: [WasmValueType.f64]
+        results: [SpiderNumberType.f64]
     });
 
     addition.body.emit(SpiderOpcodes.local_get, 0); // Push the first param onto the stack
@@ -28,7 +28,7 @@
     // We need to make our function visible to the outside world.
     spiderModule.exportFunction("add", addition);
 
-    // Compile the virtual into a real WebAssembly.Module
+    // Compile the virtual module into a real WebAssembly.Module
     const compiledModule = await spider.compileModule(spiderModule);
 
     // Instansiate the module like normal. It's just like every other WASM module now!

@@ -1,4 +1,4 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
 
 test('Start', async () => {
     const spiderModule = spider.createModule();

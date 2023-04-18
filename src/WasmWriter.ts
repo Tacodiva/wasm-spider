@@ -4,19 +4,19 @@ import { SpiderInstruction } from "./SpiderInstruction";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
-import { SpiderCustomSectionPosition, WasmExportType, WasmImportType, WasmValueType } from "./enums";
-import { SpiderOpcodes, SpiderOpcode } from "./SpiderOpcode";
+import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderReferenceType, SpiderValueType } from "./enums";
 import { LocalReference, LocalReferenceType } from "./LocalReference";
 import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderMemory } from "./SpiderMemory";
 import { SpiderTable } from "./SpiderTable";
+import { SpiderElement, SpiderElementContentType, SpiderElementKind, SpiderElementMode } from "./SpiderElement";
+import { SpiderData } from "./SpiderData";
 
 const WASM_MAGIC = 0x0061736d;
 const WASM_VERSION = 0x01000000;
 
 const WASM_FUNCTYPE = 0x60;
 export const WASM_RESULT_TYPE_VOID = 0x40;
-const WASM_TABLE_TYPE_ANY = 0x70;
 
 const enum WasmSectionType {
     custom = 0,
@@ -31,6 +31,7 @@ const enum WasmSectionType {
     element = 9,
     code = 10,
     data = 11,
+    dataCount = 12
 }
 
 export const enum WasmBlockOpcode {
@@ -46,8 +47,8 @@ export class WasmWriter extends BinaryWriter {
     public readonly config: SpiderConfig;
 
     private _module: SpiderModule | null = null;
-    private _functionIndexes: Map<SpiderFunction, number> | null = null;
     private _typeIndexes: Map<SpiderType, number> | null = null;
+    private _functionIndexes: Map<SpiderFunction, number> | null = null;
     private _globalIndexes: Map<SpiderGlobal, number> | null = null;
     private _memoryIndexes: Map<SpiderMemory, number> | null = null;
     private _tableIndexes: Map<SpiderTable, number> | null = null;
@@ -58,8 +59,8 @@ export class WasmWriter extends BinaryWriter {
             mergeTypes: config.mergeTypes ?? true
         };
         this._module = parent?._module ?? null;
-        this._functionIndexes = parent?._functionIndexes ?? null;
         this._typeIndexes = parent?._typeIndexes ?? null;
+        this._functionIndexes = parent?._functionIndexes ?? null;
         this._globalIndexes = parent?._globalIndexes ?? null;
         this._memoryIndexes = parent?._memoryIndexes ?? null;
         this._tableIndexes = parent?._tableIndexes ?? null;
@@ -79,16 +80,16 @@ export class WasmWriter extends BinaryWriter {
 
         for (const imprt of module.imports) {
             switch (imprt.importType) {
-                case WasmImportType.func:
+                case SpiderImportType.func:
                     this._functionIndexes.set(imprt, this._functionIndexes.size);
                     break;
-                case WasmImportType.global:
+                case SpiderImportType.global:
                     this._globalIndexes.set(imprt, this._globalIndexes.size);
                     break;
-                case WasmImportType.mem:
+                case SpiderImportType.mem:
                     this._memoryIndexes.set(imprt, this._memoryIndexes.size);
                     break;
-                case WasmImportType.table:
+                case SpiderImportType.table:
                     this._tableIndexes.set(imprt, this._tableIndexes.size);
                     break;
             }
@@ -197,18 +198,18 @@ export class WasmWriter extends BinaryWriter {
                 sectionWriter.writeName(imprt.name);
                 sectionWriter.writeUint8(imprt.importType);
                 switch (imprt.importType) {
-                    case WasmImportType.func:
+                    case SpiderImportType.func:
                         sectionWriter.writeTypeIndex(imprt.type);
                         break;
-                    case WasmImportType.global:
+                    case SpiderImportType.global:
                         sectionWriter.writeUint8(imprt.type);
                         sectionWriter.writeBoolean(imprt.mutable);
                         break;
-                    case WasmImportType.mem:
+                    case SpiderImportType.mem:
                         sectionWriter.writeLimits(imprt.minSize, imprt.maxSize);
                         break;
-                    case WasmImportType.table:
-                        sectionWriter.writeUint8(WASM_TABLE_TYPE_ANY);
+                    case SpiderImportType.table:
+                        sectionWriter.writeUint8(imprt.type);
                         sectionWriter.writeLimits(imprt.minSize, imprt.maxSize);
                         break;
                 }
@@ -232,7 +233,7 @@ export class WasmWriter extends BinaryWriter {
             beginSection(WasmSectionType.table);
             sectionWriter.writeULEB128(module.tables.length);
             for (const table of module.tables) {
-                sectionWriter.writeUint8(WASM_TABLE_TYPE_ANY);
+                sectionWriter.writeUint8(table.type);
                 sectionWriter.writeLimits(table.minSize, table.maxSize);
             }
             endSection();
@@ -240,7 +241,7 @@ export class WasmWriter extends BinaryWriter {
         writeCustomSections(SpiderCustomSectionPosition.AFTER_TABLE);
 
         if (module.memories.length !== 0) {
-            // Write the memories section
+            // Write the memory section
             beginSection(WasmSectionType.memory);
             sectionWriter.writeULEB128(module.memories.length);
             for (const memory of module.memories) {
@@ -271,16 +272,16 @@ export class WasmWriter extends BinaryWriter {
                 sectionWriter.writeName(exprt.name);
                 sectionWriter.writeUint8(exprt.type);
                 switch (exprt.type) {
-                    case WasmExportType.func:
+                    case SpiderExportType.func:
                         sectionWriter.writeFunctionIndex(exprt.value);
                         break;
-                    case WasmExportType.global:
+                    case SpiderExportType.global:
                         sectionWriter.writeGlobalIndex(exprt.value);
                         break;
-                    case WasmExportType.mem:
+                    case SpiderExportType.mem:
                         sectionWriter.writeMemoryIndex(exprt.value);
                         break;
-                    case WasmExportType.table:
+                    case SpiderExportType.table:
                         sectionWriter.writeTableIndex(exprt.value);
                         break;
                 }
@@ -302,15 +303,71 @@ export class WasmWriter extends BinaryWriter {
             beginSection(WasmSectionType.element);
             sectionWriter.writeULEB128(module.elements.length);
             for (const element of module.elements) {
-                sectionWriter.writeTableIndex(element.table);
-                sectionWriter.writeExpression(element.offset);
-                sectionWriter.writeULEB128(element.functions.length);
-                for (const func of element.functions)
-                    sectionWriter.writeFunctionIndex(func);
+                if (element.mode === SpiderElementMode.ACTIVE) {
+                    const tableidx = this.getTableIndex(element.table);
+                    let flags = 0;
+
+                    // Under this specific circumstance we can encode all the info more
+                    //  efficiently because of backward compatibility.
+                    const firstFuncrefTable =
+                        tableidx === 0 &&
+                        element.contentType === SpiderElementContentType.IDX &&
+                        element.kind === SpiderElementKind.FUNCTIONS;
+                    if (!firstFuncrefTable) flags |= 1 << 1;
+
+                    if (element.contentType === SpiderElementContentType.EXPR) flags |= 1 << 2;
+
+                    sectionWriter.writeUint8(flags);
+
+                    if (!firstFuncrefTable) {
+                        sectionWriter.writeULEB128(tableidx); // x:tableidx
+                        sectionWriter.writeExpression(element.offset); // e:expr
+                        if (element.contentType === SpiderElementContentType.EXPR) {
+                            sectionWriter.writeUint8(element.expressionType); // et:reftype
+                        } else {
+                            sectionWriter.writeUint8(element.kind); // et:elemkind
+                        }
+                    } else {
+                        sectionWriter.writeExpression(element.offset); // e:expr
+                    }
+                } else {
+                    let flags = 1;
+                    if (element.mode === SpiderElementMode.DECLARATIVE) flags |= 1 << 1;
+                    if (element.contentType === SpiderElementContentType.EXPR) flags |= 1 << 2;
+
+                    sectionWriter.writeUint8(flags);
+
+                    if (element.contentType === SpiderElementContentType.EXPR) {
+                        sectionWriter.writeUint8(element.expressionType); // et:reftype
+                    } else {
+                        sectionWriter.writeUint8(element.kind); // et:elemtkind
+                    }
+                }
+
+                sectionWriter.writeULEB128(element.init.length);
+
+                if (element.contentType === SpiderElementContentType.IDX) {
+                    switch (element.kind) {
+                        case SpiderElementKind.FUNCTIONS:
+                            for (const func of element.init)
+                                sectionWriter.writeFunctionIndex(func); // y*:vec(funcidx)
+                            break;
+                    }
+                } else {
+                    for (const expr of element.init)
+                        sectionWriter.writeExpression(expr); // el*:vec(expr)
+                }
             }
             endSection();
         }
         writeCustomSections(SpiderCustomSectionPosition.AFTER_ELEMENT);
+
+        if (module.data.length !== 0) {
+            beginSection(WasmSectionType.dataCount);
+            sectionWriter.writeULEB128(module.data.length);
+            endSection();            
+        }
+        writeCustomSections(SpiderCustomSectionPosition.AFTER_DATA_COUNT);
 
         if (module.functions.length !== 0) {
             // Write the code section
@@ -342,8 +399,19 @@ export class WasmWriter extends BinaryWriter {
             beginSection(WasmSectionType.data);
             sectionWriter.writeULEB128(module.data.length);
             for (const data of module.data) {
-                sectionWriter.writeMemoryIndex(data.memory);
-                sectionWriter.writeExpression(data.offset);
+                if (data.active) {
+                    const memoryIndex = this.getMemoryIndex(data.memory);
+                    if (memoryIndex === 0) {
+                        sectionWriter.writeUint8(0);
+                    } else {
+                        sectionWriter.writeUint8(2);
+                        sectionWriter.writeULEB128(memoryIndex);
+                    }
+                    sectionWriter.writeExpression(data.offset);
+                } else {
+                    sectionWriter.writeUint8(1);
+                }
+
                 sectionWriter.writeULEB128(data.buffer.length);
                 sectionWriter.write(data.buffer);
             }
@@ -352,7 +420,7 @@ export class WasmWriter extends BinaryWriter {
         writeCustomSections(SpiderCustomSectionPosition.AFTER_DATA);
     }
 
-    public writeExpression(expr: SpiderExpression, type?: WasmValueType | typeof WASM_RESULT_TYPE_VOID, terminator: WasmBlockOpcode = WasmBlockOpcode.end) {
+    public writeExpression(expr: SpiderExpression, type?: SpiderValueType | typeof WASM_RESULT_TYPE_VOID, terminator: WasmBlockOpcode = WasmBlockOpcode.end) {
         if (type !== undefined) this.writeUint8(type);
         for (const inst of expr.instructions)
             this.writeInstruction(inst);
@@ -363,6 +431,8 @@ export class WasmWriter extends BinaryWriter {
         if (this._module == null)
             throw new Error("Not currently writing a module");
         this.writeUint8(inst.opcode.primaryOpcode);
+        if (inst.opcode.secondaryOpcode !== undefined)
+            this.writeULEB128(inst.opcode.secondaryOpcode)
         if (inst.opcode.binarySerializer) inst.opcode.binarySerializer(this, ...inst.args);
     }
 
@@ -440,6 +510,28 @@ export class WasmWriter extends BinaryWriter {
         if (!this._tableIndexes) throw new Error("Table indexes not allocated.");
         const id = this._tableIndexes.get(table);
         if (id === undefined) throw new Error("Table not a part of the module.");
+        return id;
+    }
+
+    public writeElementIndex(element: SpiderElement) {
+        this.writeULEB128(this.getElementIndex(element));
+    }
+
+    public getElementIndex(element: SpiderElement): number {
+        if (!this._module) throw new Error("Not currently writing a module");
+        const id = this._module.elements.indexOf(element);
+        if (id === -1) throw new Error("Element not a part of the module.");
+        return id;
+    }
+
+    public writeDataIndex(data: SpiderData) {
+        this.writeULEB128(this.getDataIndex(data));
+    }
+
+    public getDataIndex(data: SpiderData): number {
+        if (!this._module) throw new Error("Not currently writing a module");
+        const id = this._module.data.indexOf(data);
+        if (id === -1) throw new Error("Data not a part of the module.");
         return id;
     }
 }

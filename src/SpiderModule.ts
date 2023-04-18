@@ -2,19 +2,19 @@ import { SpiderExport, SpiderExportFunction, SpiderExportGlobal, SpiderExportMem
 import { SpiderFunction, SpiderFunctionDefinition } from "./SpiderFunction";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderTypeDefinition } from "./SpiderType";
-import { SpiderCustomSectionPosition, WasmExportType, WasmImportType, WasmValueType } from "./enums";
+import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderNumberType, SpiderReferenceType, SpiderValueType } from "./enums";
 import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
-import { SpiderGlobal, SpiderGlobalDefinition } from "./SpiderGlobal";
+import { SpiderGlobalDefinition } from "./SpiderGlobal";
 import { SpiderMemory, SpiderMemoryDefinition } from "./SpiderMemory";
 import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
-import { SpiderElement, SpiderElementDefinition } from "./SpiderElement";
-import { SpiderConstExpression } from "./SpiderConstExpression";
-import { SpiderData, SpiderDataDefinition } from "./SpiderData";
+import { SpiderElement, SpiderElementContentType, SpiderElementExprActive, SpiderElementExprInactive, SpiderElementFuncIdxActive, SpiderElementFuncIdxInactive, SpiderElementKind, SpiderElementMode } from "./SpiderElement";
+import { SpiderConstExpression, SpiderConstExprNumber, SpiderConstExprValue } from "./SpiderConstExpression";
+import { SpiderData, SpiderDataActiveDef, SpiderDataPassiveDef } from "./SpiderData";
 import { SpiderCustomSection, SpiderCustomSectionDefinition } from "./SpiderCustomSection";
 
 interface SpiderTypeDesc {
-    parameters?: WasmValueType[];
-    results?: WasmValueType[];
+    parameters?: SpiderValueType[];
+    results?: SpiderValueType[];
 }
 
 export class SpiderModule {
@@ -45,7 +45,7 @@ export class SpiderModule {
         this.customSections = [];
     }
 
-    public createType(parameters: WasmValueType[] = [], ...results: WasmValueType[]): SpiderTypeDefinition {
+    public createType(parameters: SpiderValueType[] = [], ...results: SpiderValueType[]): SpiderTypeDefinition {
         const type = new SpiderTypeDefinition(this, parameters, results);
         this.types.push(type);
         return type;
@@ -60,9 +60,17 @@ export class SpiderModule {
             return this.createType();
     }
 
+    private _createConstexpr(type: SpiderNumberType, value: SpiderConstExprValue | SpiderConstExpression) {
+        if (value instanceof SpiderConstExpression) {
+            return value;
+        } else {
+            return SpiderConstExpression.create(type, value);
+        }
+    }
+
     public createFunction(
         type?: SpiderTypeDefinition | SpiderTypeDesc,
-        vars: WasmValueType[] = [],
+        vars: SpiderValueType[] = [],
         body: SpiderExpression = new SpiderExpression()) {
         const func = new SpiderFunctionDefinition(this, this._getOrCreateType(type), vars, body);
         this.functions.push(func);
@@ -70,31 +78,31 @@ export class SpiderModule {
     }
 
     public exportFunction(name: string, value: SpiderFunctionDefinition): SpiderExportFunction {
-        const exprt: SpiderExportFunction = { type: WasmExportType.func, name, value };
+        const exprt: SpiderExportFunction = { type: SpiderExportType.func, name, value };
         this.exports.push(exprt);
         return exprt;
     }
 
     public importFunction(module: string, name: string, type: SpiderTypeDefinition | SpiderTypeDesc): SpiderImportFunction {
-        const imprt: SpiderImportFunction = { importType: WasmImportType.func, name, module, type: this._getOrCreateType(type) };
+        const imprt: SpiderImportFunction = { importType: SpiderImportType.func, name, module, type: this._getOrCreateType(type) };
         this.imports.push(imprt);
         return imprt;
     }
 
-    public createGlobal(type: WasmValueType, mutable: boolean, value: number | SpiderConstExpression | SpiderGlobal): SpiderGlobalDefinition {
+    public createGlobal(type: SpiderValueType, mutable: boolean, value: SpiderConstExprValue | SpiderConstExpression): SpiderGlobalDefinition {
         const global = new SpiderGlobalDefinition(this, type, mutable, value);
         this.globals.push(global);
         return global;
     }
 
-    public importGlobal(module: string, name: string, type: WasmValueType, mutable: boolean): SpiderImportGlobal {
-        const imprt: SpiderImportGlobal = { importType: WasmImportType.global, name, module, type: type, mutable: mutable };
+    public importGlobal(module: string, name: string, type: SpiderValueType, mutable: boolean): SpiderImportGlobal {
+        const imprt: SpiderImportGlobal = { importType: SpiderImportType.global, name, module, type: type, mutable: mutable };
         this.imports.push(imprt);
         return imprt;
     }
 
     public exportGlobal(name: string, value: SpiderGlobalDefinition): SpiderExportGlobal {
-        const exprt: SpiderExportGlobal = { type: WasmExportType.global, name, value };
+        const exprt: SpiderExportGlobal = { type: SpiderExportType.global, name, value };
         this.exports.push(exprt);
         return exprt;
     }
@@ -106,46 +114,98 @@ export class SpiderModule {
     }
 
     public importMemory(module: string, name: string, minSize: number = 0, maxSize?: number): SpiderImportMemory {
-        const imprt: SpiderImportMemory = { importType: WasmImportType.mem, name, module, minSize: minSize, maxSize: maxSize };
+        const imprt: SpiderImportMemory = { importType: SpiderImportType.mem, name, module, minSize: minSize, maxSize: maxSize };
         this.imports.push(imprt);
         return imprt;
     }
 
     public exportMemory(name: string, value: SpiderMemoryDefinition): SpiderExportMemory {
-        const exprt: SpiderExportMemory = { type: WasmExportType.mem, name, value };
+        const exprt: SpiderExportMemory = { type: SpiderExportType.mem, name, value };
         this.exports.push(exprt);
         return exprt;
     }
 
-    public createTable(minSize: number, maxSize?: number): SpiderTableDefinition {
-        const table = new SpiderTableDefinition(this, minSize, maxSize);
+    public createTable(type: SpiderReferenceType, minSize: number, maxSize?: number): SpiderTableDefinition {
+        const table = new SpiderTableDefinition(this, type, minSize, maxSize);
         this.tables.push(table);
         return table;
     }
 
-    public importTable(module: string, name: string, minSize: number, maxSize?: number): SpiderImportTable {
-        const imprt: SpiderImportTable = { importType: WasmImportType.table, name, module, minSize: minSize, maxSize: maxSize };
+    public importTable(module: string, name: string, type: SpiderReferenceType, minSize: number, maxSize?: number): SpiderImportTable {
+        const imprt: SpiderImportTable = { importType: SpiderImportType.table, name, module, type, minSize: minSize, maxSize: maxSize };
         this.imports.push(imprt);
         return imprt;
     }
 
     public exportTable(name: string, value: SpiderTableDefinition): SpiderExportTable {
-        const exprt: SpiderExportTable = { type: WasmExportType.table, name, value };
+        const exprt: SpiderExportTable = { type: SpiderExportType.table, name, value };
         this.exports.push(exprt);
         return exprt;
     }
 
-    public createElement(
+    public createElementFuncIdxActive(
         table: SpiderTable,
-        offset: number | SpiderConstExpression | SpiderGlobal,
-        functions: SpiderFunction[] = []) {
-        const element = new SpiderElementDefinition(this, table, offset, functions);
+        offset: SpiderConstExprNumber | SpiderConstExpression,
+        init: SpiderFunction[]) {
+        const element: SpiderElementFuncIdxActive = {
+            contentType: SpiderElementContentType.IDX,
+            kind: SpiderElementKind.FUNCTIONS,
+            mode: SpiderElementMode.ACTIVE,
+
+            table, offset: this._createConstexpr(SpiderNumberType.i32, offset),
+            init
+        };
         this.elements.push(element);
         return element;
     }
 
-    public createData(memory: SpiderMemory, offset: number | SpiderConstExpression | SpiderGlobal, buffer: ArrayLike<number>) {
-        const data = new SpiderDataDefinition(this, memory, offset, buffer);
+    public createElementFuncIdxInactive(init: SpiderFunction[], declaritive: boolean = false) {
+        const element: SpiderElementFuncIdxInactive = {
+            contentType: SpiderElementContentType.IDX,
+            kind: SpiderElementKind.FUNCTIONS,
+            mode: declaritive ? SpiderElementMode.DECLARATIVE : SpiderElementMode.PASSIVE,
+
+            init
+        };
+        this.elements.push(element);
+        return element;
+    }
+
+    public createElementExprActive(
+        table: SpiderTable,
+        offset: SpiderConstExprNumber | SpiderConstExpression,
+        expressionType: SpiderReferenceType,
+        init: SpiderConstExpression[]) {
+        const element: SpiderElementExprActive = {
+            contentType: SpiderElementContentType.EXPR,
+            mode: SpiderElementMode.ACTIVE,
+
+            table, offset: this._createConstexpr(SpiderNumberType.i32, offset),
+            init, expressionType
+        };
+        this.elements.push(element);
+        return element;
+    }
+
+    public createElementExprInactive(expressionType: SpiderReferenceType, init: SpiderConstExpression[], declaritive: boolean = false) {
+        const element: SpiderElementExprInactive = {
+            contentType: SpiderElementContentType.EXPR,
+            mode: declaritive ? SpiderElementMode.DECLARATIVE : SpiderElementMode.PASSIVE,
+
+            init, expressionType
+        };
+        this.elements.push(element);
+        return element;
+    }
+
+    public createDataActive(memory: SpiderMemory, offset: SpiderConstExprNumber | SpiderConstExpression, buffer: ArrayLike<number>) {
+        const data = new SpiderDataActiveDef(this, memory, offset, buffer);
+        this.data.push(data);
+        return data;
+    }
+
+    public createDataPassive(buffer: ArrayLike<number>) {
+        const data = new SpiderDataPassiveDef(this, buffer);
         this.data.push(data);
         return data;
     }

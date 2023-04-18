@@ -1,15 +1,16 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
 import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
+import { SpiderNumberType } from "../src/enums";
 
 test('Simple Functions', async () => {
     // Create a blank WebAssembly module
     const spiderModule = spider.createModule();
 
-    const callbackFunc = spiderModule.importFunction("test", "callback", { parameters: [WasmValueType.f64] });
+    const callbackFunc = spiderModule.importFunction("test", "callback", { parameters: [SpiderNumberType.f64] });
 
     const runCallbackFunc = spiderModule.createFunction({
-        parameters: [WasmValueType.f64]
+        parameters: [SpiderNumberType.f64]
     });
 
     runCallbackFunc.body.emit(SpiderOpcodes.local_get, 0);
@@ -18,8 +19,8 @@ test('Simple Functions', async () => {
     runCallbackFunc.body.emit(SpiderOpcodes.call, callbackFunc);
 
     const addFunction = spiderModule.createFunction({
-        parameters: [WasmValueType.f64, WasmValueType.f64],
-        results: [WasmValueType.f64]
+        parameters: [SpiderNumberType.f64, SpiderNumberType.f64],
+        results: [SpiderNumberType.f64]
     });
 
     const ret7729 = new SpiderExpression();

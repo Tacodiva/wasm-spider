@@ -1,4 +1,6 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
+import { SpiderNumberType } from "../src/enums";
+import fs from 'fs';
 
 test('Globals', async () => {
     // Create a blank WebAssembly module
@@ -7,13 +9,13 @@ test('Globals', async () => {
     // Create a function
     const addFunction = spiderModule.createFunction({
         parameters: [],
-        results: [WasmValueType.f64]
+        results: [SpiderNumberType.f64]
     });
 
-    const moduleGlobal = spiderModule.createGlobal(WasmValueType.f64, true, 60);
+    const moduleGlobal = spiderModule.createGlobal(SpiderNumberType.f64, true, 60);
     spiderModule.exportGlobal("global", moduleGlobal);
 
-    const importedGlobal = spiderModule.importGlobal("test", "global", WasmValueType.f64, true);
+    const importedGlobal = spiderModule.importGlobal("test", "global", SpiderNumberType.f64, true);
 
     expect(moduleGlobal.value.getAsNumber()).toEqual(60);
 
@@ -25,7 +27,9 @@ test('Globals', async () => {
 
     spiderModule.exportFunction("add", addFunction);
 
-    const compiledModule = await spider.compileModule(spiderModule);
+    const moduleBuffer = spider.writeModule(spiderModule);
+    // fs.writeFileSync("tests/out/globals.wasm", new DataView(moduleBuffer));
+    const compiledModule = await WebAssembly.compile(moduleBuffer);
 
     const runtimeImportedGlobal = new WebAssembly.Global({ value: "f64", mutable: true }, 0);
     const moduleInstance = await WebAssembly.instantiate(compiledModule, {

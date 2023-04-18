@@ -1,6 +1,7 @@
-import { SpiderOpcodes, WasmValueType, spider } from "../src";
+import { SpiderOpcodes, SpiderValueType, spider } from "../src";
 import { SpiderExpression } from "../src/SpiderExpression";
 import fs from 'fs';
+import { SpiderNumberType } from "../src/enums";
 
 test('Simple If', async () => {
     // Create a blank WebAssembly module
@@ -9,9 +10,9 @@ test('Simple If', async () => {
     // Create a function
     const addFunction = spiderModule.createFunction({
         // Our function has two parameters, both 64-bit floats
-        parameters: [WasmValueType.f64, WasmValueType.f64],
+        parameters: [SpiderNumberType.f64, SpiderNumberType.f64],
         // And it returns a 64-bit float
-        results: [WasmValueType.f64]
+        results: [SpiderNumberType.f64]
     });
 
     const ret7729 = new SpiderExpression();

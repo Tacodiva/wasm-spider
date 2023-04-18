@@ -1,4 +1,6 @@
 import { LocalReference } from "./LocalReference";
+import { SpiderData } from "./SpiderData";
+import { SpiderElement } from "./SpiderElement";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderFunction } from "./SpiderFunction";
 import { SpiderGlobal } from "./SpiderGlobal";
@@ -6,17 +8,15 @@ import { SpiderMemory } from "./SpiderMemory";
 import { SpiderTable } from "./SpiderTable";
 import { SpiderTypeDefinition } from "./SpiderType";
 import { WASM_RESULT_TYPE_VOID, WasmBlockOpcode, WasmWriter } from "./WasmWriter";
-import { WasmValueType } from "./enums";
+import { SpiderReferenceType, SpiderValueType } from "./enums";
 
-type OpcodeBinarySerializer<T extends any[] | []> = (writer: WasmWriter, ...args: T) => void;
+type OpcodeBinarySerializer<T extends any[] | []> = T extends [] ? undefined : (writer: WasmWriter, ...args: T) => void;
 
-export type SpiderOpcode<T extends any[] | [] = []> = {
+export type SpiderOpcode<T extends any[] | [] = any[]> = {
     readonly primaryOpcode: number;
-} & (T extends [] ? {
-    readonly binarySerializer?: undefined;
-} : {
+    readonly secondaryOpcode?: number;
     readonly binarySerializer: OpcodeBinarySerializer<T>
-});
+};
 
 const serializerMemarg = (w: WasmWriter, align: number, offset: number) => {
     w.writeULEB128(align);
@@ -24,19 +24,30 @@ const serializerMemarg = (w: WasmWriter, align: number, offset: number) => {
 }
 
 function opcodeSimple(primaryOpcode: number): SpiderOpcode<[]> {
-    return { primaryOpcode };
+    return { primaryOpcode, binarySerializer: undefined };
 }
 
-function opcodeSimpleArgs<T extends any[]>(primaryOpcode: number, binarySerializer: OpcodeBinarySerializer<T>) {
+function opcodeSimpleArgs<T extends any[]>(primaryOpcode: number, binarySerializer: OpcodeBinarySerializer<T>): SpiderOpcode<T> {
     return { primaryOpcode, binarySerializer }
 }
 
+function opcodeSecondary(primaryOpcode: number, secondaryOpcode: number): SpiderOpcode<[]> {
+    return { primaryOpcode, secondaryOpcode, binarySerializer: undefined };
+}
+
+function opcodeSecondaryArgs<T extends any[]>(primaryOpcode: number, secondaryOpcode: number, binarySerializer: OpcodeBinarySerializer<T>): SpiderOpcode<T> {
+    return { primaryOpcode, secondaryOpcode, binarySerializer };
+}
+
 export const SpiderOpcodes = {
+
+    // Control Instructions
+
     unreachable: opcodeSimple(0x00),
     nop: opcodeSimple(0x01),
-    block: opcodeSimpleArgs<[instr: SpiderExpression, blocktype?: WasmValueType]>(0x02, (w, instr, blocktype) => w.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID)),
-    loop: opcodeSimpleArgs<[instr: SpiderExpression, blocktype?: WasmValueType]>(0x03, (w, instr, blocktype) => w.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID)),
-    if: opcodeSimpleArgs<[instrTrue: SpiderExpression, instrFalse?: SpiderExpression, blocktype?: WasmValueType]>(0x04, (w, instrTrue, instrFalse, blocktype) => {
+    block: opcodeSimpleArgs<[instr: SpiderExpression, blocktype?: SpiderValueType]>(0x02, (w, instr, blocktype) => w.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID)),
+    loop: opcodeSimpleArgs<[instr: SpiderExpression, blocktype?: SpiderValueType]>(0x03, (w, instr, blocktype) => w.writeExpression(instr, blocktype ?? WASM_RESULT_TYPE_VOID)),
+    if: opcodeSimpleArgs<[instrTrue: SpiderExpression, instrFalse?: SpiderExpression, blocktype?: SpiderValueType]>(0x04, (w, instrTrue, instrFalse, blocktype) => {
         if (instrFalse) {
             w.writeExpression(instrTrue, blocktype ?? WASM_RESULT_TYPE_VOID, WasmBlockOpcode.else);
             w.writeExpression(instrFalse);
@@ -57,13 +68,49 @@ export const SpiderOpcodes = {
         w.writeTypeIndex(type);
         w.writeTableIndex(table);
     }),
+
+    // Reference Instructions
+
+    ref_null: opcodeSimpleArgs<[reftype: SpiderReferenceType]>(0xd0, (w, t) => w.writeUint8(t)),
+    ref_is_null: opcodeSimple(0xd1),
+    ref_func: opcodeSimpleArgs<[func: SpiderFunction]>(0xd2, (w, func) => w.writeFunctionIndex(func)),
+
+    // Parametric Instructions
+
     drop: opcodeSimple(0x1a),
     select: opcodeSimple(0x1b),
+    select_t: opcodeSimpleArgs<[types: SpiderValueType[]]>(0x1c, (w, types) => {
+        w.writeULEB128(types.length);
+        for (const type of types) w.writeUint8(type);
+    }),
+
+    // Variable Instructions
+
     local_get: opcodeSimpleArgs<[localidx: LocalReference]>(0x20, (w, localidx) => w.writeLocalIndex(localidx)),
     local_set: opcodeSimpleArgs<[localidx: LocalReference]>(0x21, (w, localidx) => w.writeLocalIndex(localidx)),
     local_tee: opcodeSimpleArgs<[localidx: LocalReference]>(0x22, (w, localidx) => w.writeLocalIndex(localidx)),
     global_get: opcodeSimpleArgs<[globalidx: SpiderGlobal]>(0x23, (w, globalidx) => w.writeGlobalIndex(globalidx)),
     global_set: opcodeSimpleArgs<[globalidx: SpiderGlobal]>(0x24, (w, globalidx) => w.writeGlobalIndex(globalidx)),
+
+    // Table Instructions
+
+    table_get: opcodeSimpleArgs<[table: SpiderTable]>(0x25, (w, table) => w.writeTableIndex(table)),
+    table_set: opcodeSimpleArgs<[table: SpiderTable]>(0x26, (w, table) => w.writeTableIndex(table)),
+    table_init: opcodeSecondaryArgs<[elem: SpiderElement, table: SpiderTable]>(0xfc, 12, (w, elem, tbl) => {
+        w.writeElementIndex(elem);
+        w.writeTableIndex(tbl);
+    }),
+    elem_drop: opcodeSecondaryArgs<[elem: SpiderElement]>(0xfc, 13, (w, elem) => w.writeElementIndex(elem)),
+    table_copy: opcodeSecondaryArgs<[destTable: SpiderTable, srcTable: SpiderTable]>(0xfc, 14, (w, destTable, srcTable) => {
+        w.writeTableIndex(destTable);
+        w.writeTableIndex(srcTable);
+    }),
+    table_grow: opcodeSecondaryArgs<[table: SpiderTable]>(0xfc, 15, (w, table) => w.writeTableIndex(table)),
+    table_size: opcodeSecondaryArgs<[table: SpiderTable]>(0xfc, 16, (w, table) => w.writeTableIndex(table)),
+    table_fill: opcodeSecondaryArgs<[table: SpiderTable]>(0xfc, 17, (w, table) => w.writeTableIndex(table)),
+
+    // Memory Instructions
+
     i32_load: opcodeSimpleArgs<[align: number, offset: number]>(0x28, serializerMemarg),
     i64_load: opcodeSimpleArgs<[align: number, offset: number]>(0x29, serializerMemarg),
     f32_load: opcodeSimpleArgs<[align: number, offset: number]>(0x2a, serializerMemarg),
@@ -87,12 +134,25 @@ export const SpiderOpcodes = {
     i64_store8: opcodeSimpleArgs<[align: number, offset: number]>(0x3c, serializerMemarg),
     i64_store16: opcodeSimpleArgs<[align: number, offset: number]>(0x3d, serializerMemarg),
     i64_store32: opcodeSimpleArgs<[align: number, offset: number]>(0x3e, serializerMemarg),
-    memory_size: opcodeSimpleArgs<[memidx: SpiderMemory]>(0x3F, (w, memidx) => w.writeMemoryIndex(memidx)),
-    memory_grow: opcodeSimpleArgs<[memidx: SpiderMemory]>(0x40, (w, memidx) => w.writeMemoryIndex(memidx)),
+    memory_size: opcodeSimpleArgs<[mem: SpiderMemory]>(0x3F, (w, mem) => w.writeMemoryIndex(mem)),
+    memory_grow: opcodeSimpleArgs<[mem: SpiderMemory]>(0x40, (w, mem) => w.writeMemoryIndex(mem)),
+    memory_init: opcodeSecondaryArgs<[data: SpiderData, mem: SpiderMemory]>(0xfc, 8, (w, data, mem) => {
+        w.writeDataIndex(data);
+        w.writeMemoryIndex(mem);
+    }),
+    data_drop: opcodeSecondaryArgs<[data: SpiderData]>(0xfc, 9, (w, data) => w.writeDataIndex(data)),
+    memory_copy: opcodeSecondaryArgs<[destMem: SpiderMemory, srcMem: SpiderMemory]>(0xfc, 10, (w, destMem, srcMem) => {
+        w.writeMemoryIndex(destMem);
+        w.writeMemoryIndex(srcMem);
+    }),
+    memory_fill: opcodeSecondaryArgs<[mem: SpiderMemory]>(0xfc, 11, (w, mem) => w.writeMemoryIndex(mem)),
+
+    // Numeric Instructions
     i32_const: opcodeSimpleArgs<[n: number]>(0x41, (w, n) => w.writeSLEB128(n)),
     i64_const: opcodeSimpleArgs<[n: number]>(0x42, (w, n) => w.writeSLEB128(n)),
     f32_const: opcodeSimpleArgs<[z: number]>(0x43, (w, z) => w.writeF32(z)),
     f64_const: opcodeSimpleArgs<[z: number]>(0x44, (w, z) => w.writeF64(z)),
+
     i32_eqz: opcodeSimple(0x45),
     i32_eq: opcodeSimple(0x46),
     i32_ne: opcodeSimple(0x47),
@@ -104,6 +164,7 @@ export const SpiderOpcodes = {
     i32_le_u: opcodeSimple(0x4d),
     i32_ge_s: opcodeSimple(0x4e),
     i32_ge_u: opcodeSimple(0x4f),
+
     i64_eqz: opcodeSimple(0x50),
     i64_eq: opcodeSimple(0x51),
     i64_ne: opcodeSimple(0x52),
@@ -115,18 +176,21 @@ export const SpiderOpcodes = {
     i64_le_u: opcodeSimple(0x58),
     i64_ge_s: opcodeSimple(0x59),
     i64_ge_u: opcodeSimple(0x5a),
+
     f32_eq: opcodeSimple(0x5b),
     f32_ne: opcodeSimple(0x5c),
     f32_lt: opcodeSimple(0x5d),
     f32_gt: opcodeSimple(0x5e),
     f32_le: opcodeSimple(0x5f),
     f32_ge: opcodeSimple(0x60),
+
     f64_eq: opcodeSimple(0x61),
     f64_ne: opcodeSimple(0x62),
     f64_lt: opcodeSimple(0x63),
     f64_gt: opcodeSimple(0x64),
     f64_le: opcodeSimple(0x65),
     f64_ge: opcodeSimple(0x66),
+
     i32_clz: opcodeSimple(0x67),
     i32_ctz: opcodeSimple(0x68),
     i32_popcnt: opcodeSimple(0x69),
@@ -145,6 +209,7 @@ export const SpiderOpcodes = {
     i32_shr_u: opcodeSimple(0x76),
     i32_rotl: opcodeSimple(0x77),
     i32_rotr: opcodeSimple(0x78),
+
     i64_clz: opcodeSimple(0x79),
     i64_ctz: opcodeSimple(0x7a),
     i64_popcnt: opcodeSimple(0x7b),
@@ -163,6 +228,7 @@ export const SpiderOpcodes = {
     i64_shr_u: opcodeSimple(0x88),
     i64_rotl: opcodeSimple(0x89),
     i64_rotr: opcodeSimple(0x8a),
+
     f32_abs: opcodeSimple(0x8b),
     f32_neg: opcodeSimple(0x8c),
     f32_ceil: opcodeSimple(0x8d),
@@ -177,6 +243,7 @@ export const SpiderOpcodes = {
     f32_min: opcodeSimple(0x96),
     f32_max: opcodeSimple(0x97),
     f32_copysign: opcodeSimple(0x98),
+
     f64_abs: opcodeSimple(0x99),
     f64_neg: opcodeSimple(0x9a),
     f64_ceil: opcodeSimple(0x9b),
@@ -191,6 +258,7 @@ export const SpiderOpcodes = {
     f64_min: opcodeSimple(0xa4),
     f64_max: opcodeSimple(0xa5),
     f64_copysign: opcodeSimple(0xa6),
+
     i32_wrap_i64: opcodeSimple(0xa7),
     i32_trunc_f32_s: opcodeSimple(0xa8),
     i32_trunc_f32_u: opcodeSimple(0xa9),
@@ -215,5 +283,20 @@ export const SpiderOpcodes = {
     i32_reinterpret_f32: opcodeSimple(0xbc),
     i64_reinterpret_f64: opcodeSimple(0xbd),
     f32_reinterpret_i32: opcodeSimple(0xbe),
-    f64_reinterpret_i64: opcodeSimple(0xbf)
+    f64_reinterpret_i64: opcodeSimple(0xbf),
+
+    i32_extend8_s: opcodeSimple(0xc0),
+    i32_extend16_s: opcodeSimple(0xc1),
+    i64_extend8_s: opcodeSimple(0xc2),
+    i64_extend16_s: opcodeSimple(0xc3),
+    i64_extend32_s: opcodeSimple(0xc4),
+
+    i32_trunc_sat_f32_s: opcodeSecondary(0xfc, 0),
+    i32_trunc_sat_f32_u: opcodeSecondary(0xfc, 1),
+    i32_trunc_sat_f64_s: opcodeSecondary(0xfc, 2),
+    i32_trunc_sat_f64_u: opcodeSecondary(0xfc, 3),
+    i64_trunc_sat_f32_s: opcodeSecondary(0xfc, 4),
+    i64_trunc_sat_f32_u: opcodeSecondary(0xfc, 5),
+    i64_trunc_sat_f64_s: opcodeSecondary(0xfc, 6),
+    i64_trunc_sat_f64_u: opcodeSecondary(0xfc, 7),
 }
