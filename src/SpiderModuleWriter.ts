@@ -4,46 +4,22 @@ import { SpiderInstruction } from "./SpiderInstruction";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
-import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderReferenceType, SpiderValueType } from "./enums";
+import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderReferenceType, SpiderValueType, WasmBlockOpcode, WasmSectionType } from "./enums";
 import { LocalReference, LocalReferenceType } from "./LocalReference";
 import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderMemory } from "./SpiderMemory";
 import { SpiderTable } from "./SpiderTable";
 import { SpiderElement, SpiderElementContentType, SpiderElementKind, SpiderElementMode } from "./SpiderElement";
 import { SpiderData } from "./SpiderData";
-
-const WASM_MAGIC = 0x0061736d;
-const WASM_VERSION = 0x01000000;
-
-const WASM_FUNCTYPE = 0x60;
-export const WASM_RESULT_TYPE_VOID = 0x40;
-
-const enum WasmSectionType {
-    custom = 0,
-    type = 1,
-    import = 2,
-    function = 3,
-    table = 4,
-    memory = 5,
-    global = 6,
-    export = 7,
-    start = 8,
-    element = 9,
-    code = 10,
-    data = 11,
-    dataCount = 12
-}
-
-export const enum WasmBlockOpcode {
-    else = 0x05,
-    end = 0x0b
-}
+import { WASM_FUNCTYPE, WASM_MAGIC, WASM_RESULT_TYPE_VOID, WASM_VERSION } from "./consts";
 
 export interface SpiderConfig {
     readonly mergeTypes: boolean;
 }
 
-export class WasmWriter extends BinaryWriter {
+export class SpiderModuleWriter extends BinaryWriter {
+    public static readonly TEXT_ENCODER = new TextEncoder();
+
     public readonly config: SpiderConfig;
 
     private _module: SpiderModule | null = null;
@@ -53,7 +29,7 @@ export class WasmWriter extends BinaryWriter {
     private _memoryIndexes: Map<SpiderMemory, number> | null = null;
     private _tableIndexes: Map<SpiderTable, number> | null = null;
 
-    public constructor(config: Partial<SpiderConfig>, parent: WasmWriter | null = null) {
+    public constructor(config: Partial<SpiderConfig>, parent: SpiderModuleWriter | null = null) {
         super();
         this.config = {
             mergeTypes: config.mergeTypes ?? true
@@ -142,7 +118,7 @@ export class WasmWriter extends BinaryWriter {
             this._tableIndexes.set(module.tables[j], this._tableIndexes.size);
 
 
-        const sectionWriter = new WasmWriter(this.config, this);
+        const sectionWriter = new SpiderModuleWriter(this.config, this);
         const beginSection = (type: WasmSectionType) => {
             sectionWriter.reset();
             this.writeUint8(type);
@@ -303,9 +279,10 @@ export class WasmWriter extends BinaryWriter {
             beginSection(WasmSectionType.element);
             sectionWriter.writeULEB128(module.elements.length);
             for (const element of module.elements) {
+                let flags = 0;
+                if (element.contentType === SpiderElementContentType.EXPR) flags |= 1 << 2;
                 if (element.mode === SpiderElementMode.ACTIVE) {
                     const tableidx = this.getTableIndex(element.table);
-                    let flags = 0;
 
                     // Under this specific circumstance we can encode all the info more
                     //  efficiently because of backward compatibility.
@@ -315,7 +292,6 @@ export class WasmWriter extends BinaryWriter {
                         element.kind === SpiderElementKind.FUNCTIONS;
                     if (!firstFuncrefTable) flags |= 1 << 1;
 
-                    if (element.contentType === SpiderElementContentType.EXPR) flags |= 1 << 2;
 
                     sectionWriter.writeUint8(flags);
 
@@ -331,9 +307,8 @@ export class WasmWriter extends BinaryWriter {
                         sectionWriter.writeExpression(element.offset); // e:expr
                     }
                 } else {
-                    let flags = 1;
+                    flags |= 1;
                     if (element.mode === SpiderElementMode.DECLARATIVE) flags |= 1 << 1;
-                    if (element.contentType === SpiderElementContentType.EXPR) flags |= 1 << 2;
 
                     sectionWriter.writeUint8(flags);
 
@@ -346,16 +321,16 @@ export class WasmWriter extends BinaryWriter {
 
                 sectionWriter.writeULEB128(element.init.length);
 
-                if (element.contentType === SpiderElementContentType.IDX) {
+                if (element.contentType === SpiderElementContentType.EXPR) {
+                    for (const expr of element.init)
+                        sectionWriter.writeExpression(expr); // el*:vec(expr)
+                } else {
                     switch (element.kind) {
                         case SpiderElementKind.FUNCTIONS:
                             for (const func of element.init)
                                 sectionWriter.writeFunctionIndex(func); // y*:vec(funcidx)
                             break;
                     }
-                } else {
-                    for (const expr of element.init)
-                        sectionWriter.writeExpression(expr); // el*:vec(expr)
                 }
             }
             endSection();
@@ -373,16 +348,28 @@ export class WasmWriter extends BinaryWriter {
             // Write the code section
             beginSection(WasmSectionType.code);
 
-            const codeWriter = new WasmWriter(this.config, this);
+            const codeWriter = new SpiderModuleWriter(this.config, this);
 
             sectionWriter.writeULEB128(module.functions.length);
             for (const func of module.functions) {
                 codeWriter.reset();
 
                 codeWriter.writeULEB128(func.localVariables.length);
-                for (let i = 0; i < func.localVariables.length; i++) {
-                    codeWriter.writeULEB128(i);
-                    codeWriter.writeUint8(func.localVariables[i]);
+                if (func.localVariables.length !== 0) {
+                    let varCount = 1;
+                    let varType = func.localVariables[0];
+                    for (let i = 1; i < func.localVariables.length; i++) {
+                        if (func.localVariables[i] !== varType) {
+                            codeWriter.writeULEB128(varCount);
+                            codeWriter.writeUint8(varType);
+                            varType = func.localVariables[i];
+                            varCount = 1;
+                        } else {
+                            ++varCount;
+                        }
+                    }
+                    codeWriter.writeULEB128(varCount);
+                    codeWriter.writeUint8(varType);
                 }
 
                 codeWriter.writeExpression(func.body);
@@ -418,6 +405,13 @@ export class WasmWriter extends BinaryWriter {
             endSection();
         }
         writeCustomSections(SpiderCustomSectionPosition.AFTER_DATA);
+
+        this._module = null;
+        this._typeIndexes = null;
+        this._functionIndexes = null;
+        this._globalIndexes = null;
+        this._memoryIndexes = null;
+        this._tableIndexes = null;
     }
 
     public writeExpression(expr: SpiderExpression, type?: SpiderValueType | typeof WASM_RESULT_TYPE_VOID, terminator: WasmBlockOpcode = WasmBlockOpcode.end) {
@@ -433,11 +427,11 @@ export class WasmWriter extends BinaryWriter {
         this.writeUint8(inst.opcode.primaryOpcode);
         if (inst.opcode.secondaryOpcode !== undefined)
             this.writeULEB128(inst.opcode.secondaryOpcode)
-        if (inst.opcode.binarySerializer) inst.opcode.binarySerializer(this, ...inst.args);
+        if (inst.opcode.binarySerializer) inst.opcode.binarySerializer[0](this, ...inst.args);
     }
 
     public writeName(value: string) {
-        const encoded = BinaryWriter.TEXT_ENCODER.encode(value);
+        const encoded = SpiderModuleWriter.TEXT_ENCODER.encode(value);
         this.writeULEB128(encoded.byteLength);
         this.write(encoded);
     }

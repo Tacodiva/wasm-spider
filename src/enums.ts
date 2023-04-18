@@ -45,3 +45,24 @@ export const enum SpiderImportType {
     mem = 0x02,
     global = 0x03
 }
+
+export const enum WasmSectionType {
+    custom = 0,
+    type = 1,
+    import = 2,
+    function = 3,
+    table = 4,
+    memory = 5,
+    global = 6,
+    export = 7,
+    start = 8,
+    element = 9,
+    code = 10,
+    data = 11,
+    dataCount = 12
+}
+
+export const enum WasmBlockOpcode {
+    else = 0x05,
+    end = 0x0b
+}

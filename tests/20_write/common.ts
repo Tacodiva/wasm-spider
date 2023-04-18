@@ -1,4 +1,4 @@
-import { SpiderFunction, SpiderFunctionDefinition, SpiderModule, SpiderNumberType, SpiderOpcodes } from "../src";
+import { SpiderFunction, SpiderFunctionDefinition, SpiderModule, SpiderNumberType, SpiderOpcodes } from "../../src";
 
 export function createAdd(spiderModule: SpiderModule): SpiderFunctionDefinition {
     const addFunction = spiderModule.createFunction({

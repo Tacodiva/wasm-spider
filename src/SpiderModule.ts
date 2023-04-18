@@ -1,6 +1,5 @@
 import { SpiderExport, SpiderExportFunction, SpiderExportGlobal, SpiderExportMemory, SpiderExportTable } from "./SpiderExport";
 import { SpiderFunction, SpiderFunctionDefinition } from "./SpiderFunction";
-import { SpiderExpression } from "./SpiderExpression";
 import { SpiderTypeDefinition } from "./SpiderType";
 import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderNumberType, SpiderReferenceType, SpiderValueType } from "./enums";
 import { SpiderImport, SpiderImportFunction, SpiderImportGlobal, SpiderImportMemory, SpiderImportTable } from "./SpiderImport";
@@ -8,8 +7,8 @@ import { SpiderGlobalDefinition } from "./SpiderGlobal";
 import { SpiderMemory, SpiderMemoryDefinition } from "./SpiderMemory";
 import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 import { SpiderElement, SpiderElementContentType, SpiderElementExprActive, SpiderElementExprInactive, SpiderElementFuncIdxActive, SpiderElementFuncIdxInactive, SpiderElementKind, SpiderElementMode } from "./SpiderElement";
-import { SpiderConstExpression, SpiderConstExprNumber, SpiderConstExprValue } from "./SpiderConstExpression";
-import { SpiderData, SpiderDataActiveDef, SpiderDataPassiveDef } from "./SpiderData";
+import { SpiderExpression, SpiderExprConstNumber, SpiderExprConstValue } from "./SpiderExpression";
+import { SpiderData, SpiderDataActive, SpiderDataPassive } from "./SpiderData";
 import { SpiderCustomSection, SpiderCustomSectionDefinition } from "./SpiderCustomSection";
 
 interface SpiderTypeDesc {
@@ -27,7 +26,7 @@ export class SpiderModule {
     public readonly tables: SpiderTableDefinition[];
     public readonly elements: SpiderElement[];
     public readonly data: SpiderData[];
-    public start: SpiderFunctionDefinition | null;
+    public start: SpiderFunction | null;
 
     public readonly customSections: (SpiderCustomSection[] | undefined)[];
 
@@ -60,11 +59,11 @@ export class SpiderModule {
             return this.createType();
     }
 
-    private _createConstexpr(type: SpiderNumberType, value: SpiderConstExprValue | SpiderConstExpression) {
-        if (value instanceof SpiderConstExpression) {
+    private _createConstexpr(type: SpiderValueType, value: SpiderExprConstValue | SpiderExpression) {
+        if (value instanceof SpiderExpression) {
             return value;
         } else {
-            return SpiderConstExpression.create(type, value);
+            return SpiderExpression.createConst(type, value);
         }
     }
 
@@ -89,8 +88,8 @@ export class SpiderModule {
         return imprt;
     }
 
-    public createGlobal(type: SpiderValueType, mutable: boolean, value: SpiderConstExprValue | SpiderConstExpression): SpiderGlobalDefinition {
-        const global = new SpiderGlobalDefinition(this, type, mutable, value);
+    public createGlobal(type: SpiderValueType, mutable: boolean, value: SpiderExprConstValue | SpiderExpression): SpiderGlobalDefinition {
+        const global = new SpiderGlobalDefinition(this, type, mutable, this._createConstexpr(type, value));
         this.globals.push(global);
         return global;
     }
@@ -145,7 +144,7 @@ export class SpiderModule {
 
     public createElementFuncIdxActive(
         table: SpiderTable,
-        offset: SpiderConstExprNumber | SpiderConstExpression,
+        offset: SpiderExprConstNumber | SpiderExpression,
         init: SpiderFunction[]) {
         const element: SpiderElementFuncIdxActive = {
             contentType: SpiderElementContentType.IDX,
@@ -173,9 +172,9 @@ export class SpiderModule {
 
     public createElementExprActive(
         table: SpiderTable,
-        offset: SpiderConstExprNumber | SpiderConstExpression,
+        offset: SpiderExprConstNumber | SpiderExpression,
         expressionType: SpiderReferenceType,
-        init: SpiderConstExpression[]) {
+        init: SpiderExpression[]) {
         const element: SpiderElementExprActive = {
             contentType: SpiderElementContentType.EXPR,
             mode: SpiderElementMode.ACTIVE,
@@ -187,7 +186,7 @@ export class SpiderModule {
         return element;
     }
 
-    public createElementExprInactive(expressionType: SpiderReferenceType, init: SpiderConstExpression[], declaritive: boolean = false) {
+    public createElementExprInactive(expressionType: SpiderReferenceType, init: SpiderExpression[], declaritive: boolean = false) {
         const element: SpiderElementExprInactive = {
             contentType: SpiderElementContentType.EXPR,
             mode: declaritive ? SpiderElementMode.DECLARATIVE : SpiderElementMode.PASSIVE,
@@ -198,14 +197,14 @@ export class SpiderModule {
         return element;
     }
 
-    public createDataActive(memory: SpiderMemory, offset: SpiderConstExprNumber | SpiderConstExpression, buffer: ArrayLike<number>) {
-        const data = new SpiderDataActiveDef(this, memory, offset, buffer);
+    public createDataActive(memory: SpiderMemory, offset: SpiderExprConstNumber | SpiderExpression, buffer: ArrayLike<number>) {
+        const data: SpiderDataActive = { active: true, memory, offset: this._createConstexpr(SpiderNumberType.i32, offset), buffer };
         this.data.push(data);
         return data;
     }
 
     public createDataPassive(buffer: ArrayLike<number>) {
-        const data = new SpiderDataPassiveDef(this, buffer);
+        const data: SpiderDataPassive = { active: false, buffer };
         this.data.push(data);
         return data;
     }

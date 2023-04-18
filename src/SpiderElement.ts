@@ -1,4 +1,3 @@
-import { SpiderConstExpression } from "./SpiderConstExpression";
 import { SpiderExpression } from "./SpiderExpression";
 import { SpiderFunction } from "./SpiderFunction";
 import { SpiderTable } from "./SpiderTable";
@@ -56,7 +55,7 @@ interface SpiderElementActive extends SpiderElementBase {
     /** What table will our contents be loaded into on initalization */
     table: SpiderTable;
     /** Where in the table will our contents be loaded into on initalization */
-    offset: SpiderConstExpression;
+    offset: SpiderExpression;
 }
 
 /** Properties shared by all inactive elements */

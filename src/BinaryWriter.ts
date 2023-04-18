@@ -2,8 +2,6 @@
 const ALLOC_SIZE = 1024;
 
 export class BinaryWriter {
-    public static readonly TEXT_ENCODER = new TextEncoder();
-
     private _buffer: Uint8Array;
     private _bufferView: DataView;
 
@@ -73,13 +71,13 @@ export class BinaryWriter {
         this.position += 8;
     }
 
-    public writeF64(float: number) {
+    public writeFloat64(float: number) {
         this._checkBuffer(8);
         this._bufferView.setFloat64(this.position, float, true);
         this.position += 8;
     }
 
-    public writeF32(float: number) {
+    public writeFloat32(float: number) {
         this._checkBuffer(4);
         this._bufferView.setFloat32(this.position, float, true);
         this.position += 4;

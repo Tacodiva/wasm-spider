@@ -10,7 +10,7 @@ export type SpiderFunction = SpiderFunctionDefinition | SpiderImportFunction;
 export class SpiderFunctionDefinition {
     public readonly module: SpiderModule;
 
-    public readonly body: SpiderExpression;
+    public body: SpiderExpression;
 
     private readonly _localVariables: SpiderValueType[];
     public get localVariables(): readonly SpiderValueType[] { return this._localVariables; }
