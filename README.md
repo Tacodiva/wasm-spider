@@ -1,6 +1,6 @@
 # 🕷️ WASM Spider 
 
-**WASM Spider** is a fluent Typescript / Javascript library for creating and manipulating WebAssembly modules. It can be used to modify or analyze existing modules or create new ones from the ground up. It fully impliments WASM 1.0 and bulk memory operations, reference types, fixed-width SIMD, mutable globals, non-trapping float-to-int conversions and sign-extension operations. Take a look at the (docs)[https://emberj.sh/wasm-spider/classes/SpiderModule.html] to get started, or take a look at the example usages below.
+**WASM Spider** is a fluent Typescript / Javascript library for creating and manipulating WebAssembly modules. It can be used to modify or analyze existing modules or create new ones from the ground up. It fully impliments WASM 1.0 and bulk memory operations, reference types, fixed-width SIMD, mutable globals, non-trapping float-to-int conversions and sign-extension operations. Take a look at the [docs](https://emberj.sh/wasm-spider/classes/SpiderModule.html) to get started, or take a look at the example usages below.
 
 *((do you get the name? because it makes web assemblies like a spider??))*
 
