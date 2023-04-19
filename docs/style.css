@@ -1,0 +1,174 @@
+/*
+ * Tacodiva's Simple TypeDoc Theme
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@500;600&family=Source+Serif+Pro&display=swap');
+
+.tsd-navigation {
+    padding-top: 0.33rem;
+}
+
+.col-content {
+    position: relative;
+    padding-bottom: 2rem;
+    padding-top: 0.8rem;
+}
+
+.col-content::after {
+    position: absolute;
+    bottom: 0;
+    content: "Page generated using TypeDoc ❤️";
+    display: inline-block;
+    box-sizing: border-box;
+    padding: 0.8rem 0;
+    font-size: 1.025em;
+    font-style: italic;
+    margin-bottom: 0.6rem;
+    width: 100%;
+    border-top: 1px solid var(--color-accent);
+    border-bottom: 1px solid var(--color-accent);
+    text-align: center;
+}
+
+.settings>details>summary>h3 {
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0.33rem;
+}
+
+.settings>details>summary>h3>svg {
+    width: 0.9rem;
+    height: 0.9rem;
+}
+
+.tsd-filter-input>svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.tsd-filter-visibility {
+    display: none;
+}
+
+.tsd-filter-input>span {
+    font-family: 'Source Serif Pro', serif;
+}
+
+.uppercase {
+    text-transform: none;
+}
+
+.tsd-accordion-details {
+    font-size: 1rem;
+    font-weight: 600;
+    margin: 0.33rem;
+}
+
+.container-main {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.tsd-hierarchy {
+    display: none;
+}
+
+.tsd-page-navigation>summary>h3 {
+    display: none;
+}
+
+.tsd-index-summary {
+    display: none;
+}
+
+.tsd-accordion-summary {
+    border-bottom: 1px solid var(--color-accent);
+}
+
+.tsd-theme-toggle {
+    padding-left: 1rem;
+}
+
+.tsd-page-navigation>summary::before {
+    content: "Outline";
+    font-size: 1.1rem;
+    font-weight: 700;
+    margin: 0.33rem;
+}
+
+.tsd-signature {
+    font-family: 'Source Code Pro', Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-weight: 600;
+    border-left: none;
+    border-right: none;
+}
+
+h2 {
+    font-size: 1.75rem;
+}
+
+h3 {
+    font-size: 1.5rem;
+}
+
+p {
+    font-size: 1.1rem;
+}
+
+code {
+    font-family: 'Source Code Pro', Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-weight: 600;
+}
+
+pre {
+    border-radius: 0;
+    background-color: var(--color-background);
+    border-right: none;
+    border-left: none;
+}
+
+pre>code {
+    background-color: var(--color-background);
+}
+
+span {
+    font-family: 'Source Code Pro', Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-weight: 500;
+}
+
+body {
+    font-family: 'Source Serif Pro', serif;
+}
+
+.tsd-tag {
+    background-color: var(--tag-background);
+    border-radius: 0.8em;
+}
+
+.tsd-generator {
+    display: none;
+}
+
+:root[data-theme="light"] {
+    --tag-background: var(--light-color-tag-background);
+}
+
+:root[data-theme="dark"] {
+    --tag-background: var(--dark-color-tag-background);
+}
+
+:root {
+    --dark-color-background: #1e2024;
+    --dark-color-background-secondary: #212327;
+    --dark-color-icon-background: var(--dark-color-background);
+    --dark-color-tag-background: var(--dark-color-background);
+
+    --light-color-icon-background: var(--light-color-background);
+    --light-code-background: var(--light-color-background);
+    --light-color-tag-background: var(--light-color-background-secondary);
+}
+
+.page-menu,
+.site-menu {
+    max-height: calc(100vh - 42px);
+}

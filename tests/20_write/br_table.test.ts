@@ -1,17 +1,17 @@
-import { SpiderNumberType, SpiderOpcodes, SpiderValueType, spider } from "../../src";
+import { SpiderNumberType, SpiderOpcodes, SpiderValueType, createModule, writeModule } from "../../src";
 import fs from 'fs';
 
 describe('Spider', () => {
     describe('Write', () => {
         test('br_table', async () => {
-            const spiderModule = spider.createModule();
+            const spiderModule = createModule();
 
             const testFunction = spiderModule.createFunction({
                 parameters: [SpiderNumberType.i32],
                 results: [SpiderNumberType.i32]
             });
 
-            let defaultCase = testFunction.body.emitBlock(SpiderNumberType.i32);
+            let defaultCase = testFunction.body.emitBlock(undefined, SpiderNumberType.i32);
             let case1 = defaultCase.emitBlock();
             let case0 = case1.emitBlock();
             let outerBlock = case0.emitBlock();
@@ -29,7 +29,7 @@ describe('Spider', () => {
 
             spiderModule.exportFunction("test", testFunction);
 
-            const moduleBuffer = spider.writeModule(spiderModule);
+            const moduleBuffer = writeModule(spiderModule);
             fs.writeFileSync("tests/bin/br_table.wasm", moduleBuffer);
             const compiledModule = await WebAssembly.compile(moduleBuffer);
 

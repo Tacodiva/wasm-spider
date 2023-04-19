@@ -11,7 +11,7 @@
 
 ```typescript
     // Create a blank WebAssembly module
-    const spiderModule = spider.createModule();
+    const spiderModule = createModule();
 
     // Create a function
     const addition = spiderModule.createFunction({

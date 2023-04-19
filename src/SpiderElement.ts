@@ -11,16 +11,17 @@ export const enum SpiderElementContentType {
 }
 
 export const enum SpiderElementMode {
-    /** This element is loaded on initalization.  */
+    /** Active elements are copied to their target table on initalization.  */
     ACTIVE,
-    /** This element does nothing on initalization and can be loaded by instructions.  */
+    /** Passive elements do nothing on initalization and can be loaded by instructions.  */
     PASSIVE,
-    /** This element does nothing on initalization and cannot be loaded by instructions.  */
+    /** Declaritive element do nothing on initalization and cannot be loaded by instructions.  */
     DECLARATIVE
 }
 
+/** The type of indices stored in an element. */
 export const enum SpiderElementKind {
-    /** This element with content type SpiderElementContentType.IDX contains function indices.  */
+    /** This element contains function indices.  */
     FUNCTIONS = 0x00
 }
 
@@ -37,24 +38,24 @@ interface SpiderElementBase {
 /** Properties shared by all expression content type elements. */
 export interface SpiderElementExpr extends SpiderElementBase {
     readonly contentType: SpiderElementContentType.EXPR;
-    /** What type do the expressions return? */
+    /** The reference type returned by the expressions. */
     readonly expressionType: SpiderReferenceType;
     init: SpiderExpression[];
 }
 
-/** Properties shared by all index content type elements */
+/** Properties shared by all index content type elements. */
 interface SpiderElementIdx extends SpiderElementBase {
     readonly contentType: SpiderElementContentType.IDX;
-    /** The kind of indice contained by this element. */
+    /** The type of index contained by this element. */
     readonly kind: SpiderElementKind;
 }
 
 /** Properties shared by all active elements. */
 interface SpiderElementActive extends SpiderElementBase {
     readonly mode: SpiderElementMode.ACTIVE;
-    /** What table will our contents be loaded into on initalization */
+    /** The table to copy our contents into. */
     table: SpiderTable;
-    /** Where in the table will our contents be loaded into on initalization */
+    /** The offset within the table to copy our contents into. */
     offset: SpiderExpression;
 }
 
@@ -68,12 +69,17 @@ interface SpiderElementFuncIdx extends SpiderElementIdx {
     init: SpiderFunction[];
 }
 
+/** An {@link SpiderElementMode active} element containing function indices. */
 export type SpiderElementFuncIdxActive = SpiderElementFuncIdx & SpiderElementActive;
+/** A {@link SpiderElementMode passive} or {@link SpiderElementMode declarative} element containing function indices. */
 export type SpiderElementFuncIdxInactive = SpiderElementFuncIdx & SpiderElementInactive;
 
+/** An {@link SpiderElementMode active} element containing expressions. */
 export type SpiderElementExprActive = SpiderElementExpr & SpiderElementActive;
+/** A {@link SpiderElementMode passive} or {@link SpiderElementMode declarative} element containing expressions. */
 export type SpiderElementExprInactive = SpiderElementExpr & SpiderElementInactive;
 
+/** A list of references which can be copied into a table defined within a module. */
 export type SpiderElement = 
     SpiderElementFuncIdxActive |
     SpiderElementFuncIdxInactive | 

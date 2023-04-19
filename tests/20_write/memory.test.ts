@@ -1,11 +1,11 @@
-import { SpiderNumberType, SpiderOpcodes, SpiderValueType, spider } from "../../src";
+import { SpiderNumberType, SpiderOpcodes, SpiderValueType, createModule, writeModule } from "../../src";
 import fs from 'fs';
 
 describe('Spider', () => {
     describe('Write', () => {
         describe("Memory", () => {
-            function createModule() {
-                const spiderModule = spider.createModule();
+            function makeModule() {
+                const spiderModule = createModule();
 
                 const addFunction = spiderModule.createFunction();
                 addFunction.body.emitConstant(SpiderNumberType.i32, 0);
@@ -26,13 +26,13 @@ describe('Spider', () => {
             }
 
             test('memory_export', async () => {
-                const spiderModule = createModule();
+                const spiderModule = makeModule();
                 spiderModule.exportMemory("memory", spiderModule.createMemory(1, 2));
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/memory_export.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
-    
+
                 const moduleInstance = await WebAssembly.instantiate(compiledModule);
                 const compiledAdd = moduleInstance.exports.add as Function;
                 const compiledMemory = moduleInstance.exports.memory as WebAssembly.Memory;
@@ -50,10 +50,10 @@ describe('Spider', () => {
             });
 
             test('memory_import', async () => {
-                const spiderModule = createModule();
+                const spiderModule = makeModule();
                 spiderModule.importMemory("test", "memory");
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/memory_import.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
 

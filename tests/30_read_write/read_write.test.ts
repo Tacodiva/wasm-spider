@@ -1,8 +1,13 @@
 import fs from 'fs';
 import path from 'path';
-import { spider } from '../../src';
+import { SpiderReadConfig, createModule, readModule, writeModule } from '../../src';
 
 describe('Spider', () => {
+
+    const CONFIGS: SpiderReadConfig[] = [
+        { referenceLocals: true },
+        { referenceLocals: false }
+    ];
 
     function addTests(dir: string, exact: boolean) {
         describe(dir, () => {
@@ -11,15 +16,17 @@ describe('Spider', () => {
                 const wasmPath = path.join(dir, file);
                 const wasmName = path.basename(wasmPath, ".wasm");
                 test(wasmName, async () => {
-                    const wasmInput = new Uint8Array(fs.readFileSync(wasmPath));
-                    const spiderModule = spider.readModule(wasmInput);
-                    const wasmOutput = spider.writeModule(spiderModule, { mergeTypes: false });
+                    for (const config of CONFIGS) {
+                        const wasmInput = new Uint8Array(fs.readFileSync(wasmPath));
+                        const spiderModule = readModule(wasmInput, config);
+                        const wasmOutput = writeModule(spiderModule, { mergeTypes: false });
 
-                    if (exact)
-                        expect(wasmInput.buffer).toStrictEqual(wasmOutput.buffer);
-                    else {
-                        expect(spider.readModule(wasmOutput)).toEqual(spiderModule);
-                        expect(await WebAssembly.compile(wasmOutput));
+                        if (exact)
+                            expect(wasmInput.buffer).toStrictEqual(wasmOutput.buffer);
+                        else {
+                            expect(readModule(wasmOutput, config)).toEqual(spiderModule);
+                            expect(await WebAssembly.compile(wasmOutput));
+                        }
                     }
                 });
             }

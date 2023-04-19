@@ -1,4 +1,4 @@
-import { LocalReference } from "./LocalReference";
+import { SpiderLocal } from "./SpiderLocalReference";
 import { SpiderData } from "./SpiderData";
 import { SpiderElement } from "./SpiderElement";
 import { SpiderExpression } from "./SpiderExpression";
@@ -17,6 +17,7 @@ type OpcodeBinarySerializer<T extends any[] | []> = T extends [] ? undefined : r
 export type SpiderOpcode<T extends any[] | [] = any[] | []> = {
     readonly primaryOpcode: number;
     readonly secondaryOpcode?: number;
+    /** @hidden */
     readonly binarySerializer: OpcodeBinarySerializer<T>
 };
 
@@ -56,9 +57,9 @@ const serializeULEB128: OpcodeBinarySerializer<[number]> = [
     (r) => [r.readULEB128()]
 ]
 
-const serializeLocalIndex: OpcodeBinarySerializer<[localindex: LocalReference]> = [
+const serializeLocalIndex: OpcodeBinarySerializer<[localindex: SpiderLocal]> = [
     (w, localindex) => w.writeLocalIndex(localindex),
-    r => [r.readULEB128()] // TODO Make this better
+    r => [r.readLocalIndex()]
 ];
 
 const serializeTable: OpcodeBinarySerializer<[table: SpiderTable]> = [
@@ -162,9 +163,9 @@ export const SpiderOpcodes = {
 
     // Variable Instructions
 
-    local_get: opcodeSimpleArgs<[localidx: LocalReference]>(0x20, serializeLocalIndex),
-    local_set: opcodeSimpleArgs<[localidx: LocalReference]>(0x21, serializeLocalIndex),
-    local_tee: opcodeSimpleArgs<[localidx: LocalReference]>(0x22, serializeLocalIndex),
+    local_get: opcodeSimpleArgs<[localidx: SpiderLocal]>(0x20, serializeLocalIndex),
+    local_set: opcodeSimpleArgs<[localidx: SpiderLocal]>(0x21, serializeLocalIndex),
+    local_tee: opcodeSimpleArgs<[localidx: SpiderLocal]>(0x22, serializeLocalIndex),
     global_get: opcodeSimpleArgs<[globalidx: SpiderGlobal]>(0x23, [(w, globalidx) => w.writeGlobalIndex(globalidx), r => [r.readGlobalIndex()]]),
     global_set: opcodeSimpleArgs<[globalidx: SpiderGlobal]>(0x24, [(w, globalidx) => w.writeGlobalIndex(globalidx), r => [r.readGlobalIndex()]]),
 
@@ -627,4 +628,4 @@ export const SpiderOpcodes = {
     f64x2_convert_low_i32x4_u: opcodeSecondary(0xFD, 255),
     f32x4_demote_f64x2_zero: opcodeSecondary(0xFD, 94),
     f64x2_promote_low_f32x4: opcodeSecondary(0xFD, 95),
-}
+} as const;

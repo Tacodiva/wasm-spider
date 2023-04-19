@@ -1,10 +1,10 @@
-import { SpiderNumberType, SpiderOpcodes, SpiderValueType, spider } from "../../src";
+import { SpiderNumberType, SpiderOpcodes, SpiderValueType, createModule, writeModule } from "../../src";
 import fs from 'fs';
 
 describe('Spider', () => {
     describe('Write', () => {
         test('add', async () => {
-            const spiderModule = spider.createModule();
+            const spiderModule = createModule();
 
             const addFunction = spiderModule.createFunction({
                 parameters: [SpiderNumberType.f64, SpiderNumberType.f64],
@@ -17,7 +17,7 @@ describe('Spider', () => {
 
             spiderModule.exportFunction("add", addFunction);
 
-            const moduleBuffer = spider.writeModule(spiderModule);
+            const moduleBuffer = writeModule(spiderModule);
             fs.writeFileSync("tests/bin/add.wasm", moduleBuffer);
             const compiledModule = await WebAssembly.compile(moduleBuffer);
 

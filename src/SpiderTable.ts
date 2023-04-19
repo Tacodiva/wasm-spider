@@ -11,6 +11,7 @@ export class SpiderTableDefinition {
     public minSize: number;
     public maxSize: number | undefined;
 
+    /** @hidden */
     public constructor(module: SpiderModule, type: SpiderReferenceType, minSize: number, maxSize?: number) {
         this.module = module;
         this.type = type;

@@ -13,7 +13,8 @@
   "esnext": "dist/esm/index.mjs",
   "scripts": {
     "build": "rollup -c",
-    "test": "jest --runInBand"
+    "test": "jest --runInBand",
+    "docs": "typedoc --out docs/public src/index.ts --tsconfig tsconfig.npm.json"
   },
   "devDependencies": {
     "@rollup/plugin-terser": "^0.4.1",
@@ -25,6 +26,7 @@
     "ts-jest": "^29.1.0",
     "ts-node": "^10.9.1",
     "tslib": "^2.5.0",
+    "typedoc": "^0.24.4",
     "typescript": "^5.0.4"
   }
 }

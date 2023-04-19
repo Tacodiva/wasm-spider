@@ -1,10 +1,10 @@
-import { SpiderNumberType, SpiderOpcodes, SpiderValueType, spider } from "../../src";
+import { SpiderNumberType, SpiderOpcodes, SpiderValueType, createModule, writeModule } from "../../src";
 import fs from 'fs';
 
 describe('Spider', () => {
     describe('Write', () => {
         test('local_var_refs', async () => {
-            const spiderModule = spider.createModule();
+            const spiderModule = createModule();
 
             const callbackFunc = spiderModule.importFunction("test", "callback", { parameters: [SpiderNumberType.f64] });
 
@@ -29,7 +29,7 @@ describe('Spider', () => {
             addFunction.body.emit(SpiderOpcodes.f64_const, 0);
             addFunction.body.emit(SpiderOpcodes.f64_eq);
 
-            const ifelse = addFunction.body.emitIfElse(SpiderNumberType.f64);
+            const ifelse = addFunction.body.emitIfElse(undefined, undefined, SpiderNumberType.f64);
 
             ifelse.instrTrue.emit(SpiderOpcodes.f64_const, 7729);
             ifelse.instrTrue.emit(SpiderOpcodes.f64_const, 70);
@@ -51,7 +51,7 @@ describe('Spider', () => {
 
             spiderModule.exportFunction("add", addFunction);
 
-            const moduleBuffer = spider.writeModule(spiderModule);
+            const moduleBuffer = writeModule(spiderModule);
             fs.writeFileSync("tests/bin/local_var_refs.wasm", moduleBuffer);
             const compiledModule = await WebAssembly.compile(moduleBuffer);
 

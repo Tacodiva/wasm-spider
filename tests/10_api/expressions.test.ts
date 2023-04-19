@@ -1,4 +1,4 @@
-import { SpiderExpression, SpiderNumberType, SpiderOpcodes, SpiderReferenceType, SpiderValueType, spider } from "../../src";
+import { SpiderExpression, SpiderNumberType, SpiderOpcodes, SpiderReferenceType, SpiderValueType, createModule, writeModule } from "../../src";
 
 describe('Spider', () => {
     describe('API', () => {
@@ -20,7 +20,7 @@ describe('Spider', () => {
             });
 
             test('Get/Set Const', () => {
-                const module = spider.createModule();
+                const module = createModule();
 
                 const expr = new SpiderExpression();
                 expr.setToConst(SpiderNumberType.i32, 69);

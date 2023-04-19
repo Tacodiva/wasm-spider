@@ -5,22 +5,26 @@ import { SpiderExpression } from "./SpiderExpression";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderType } from "./SpiderType";
 import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderReferenceType, SpiderValueType, WasmBlockOpcode, WasmSectionType } from "./enums";
-import { LocalReference, LocalReferenceType } from "./LocalReference";
+import { SpiderLocal, SpiderLocalReferenceType } from "./SpiderLocalReference";
 import { SpiderGlobal } from "./SpiderGlobal";
 import { SpiderMemory } from "./SpiderMemory";
 import { SpiderTable } from "./SpiderTable";
 import { SpiderElement, SpiderElementContentType, SpiderElementKind, SpiderElementMode } from "./SpiderElement";
-import { SpiderData } from "./SpiderData";
+import { SpiderData, SpiderDataType } from "./SpiderData";
 import { WASM_FUNCTYPE, WASM_MAGIC, WASM_RESULT_TYPE_VOID, WASM_VERSION } from "./consts";
 
-export interface SpiderConfig {
+export interface SpiderWriteConfig {
+    /**
+     * When true, identical {@link SpiderType types} are merged into one type to make the outputted binary smaller.
+     * Defaults to true.
+     */
     readonly mergeTypes: boolean;
 }
 
 export class SpiderModuleWriter extends BinaryWriter {
     public static readonly TEXT_ENCODER = new TextEncoder();
 
-    public readonly config: SpiderConfig;
+    public readonly config: SpiderWriteConfig;
 
     private _module: SpiderModule | null = null;
     private _typeIndexes: Map<SpiderType, number> | null = null;
@@ -29,7 +33,7 @@ export class SpiderModuleWriter extends BinaryWriter {
     private _memoryIndexes: Map<SpiderMemory, number> | null = null;
     private _tableIndexes: Map<SpiderTable, number> | null = null;
 
-    public constructor(config: Partial<SpiderConfig>, parent: SpiderModuleWriter | null = null) {
+    public constructor(config: Partial<SpiderWriteConfig>, parent: SpiderModuleWriter | null = null) {
         super();
         this.config = {
             mergeTypes: config.mergeTypes ?? true
@@ -398,7 +402,7 @@ export class SpiderModuleWriter extends BinaryWriter {
             beginSection(WasmSectionType.data);
             sectionWriter.writeULEB128(module.data.length);
             for (const data of module.data) {
-                if (data.active) {
+                if (data.type === SpiderDataType.ACTIVE) {
                     const memoryIndex = this.getMemoryIndex(data.memory);
                     if (memoryIndex === 0) {
                         sectionWriter.writeUint8(0);
@@ -454,10 +458,10 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (max !== undefined) this.writeULEB128(max);
     }
 
-    public writeLocalIndex(local: LocalReference) {
+    public writeLocalIndex(local: SpiderLocal) {
         if (typeof local === "number")
             this.writeULEB128(local);
-        else if (local.refType === LocalReferenceType.PARAM)
+        else if (local.refType === SpiderLocalReferenceType.PARAM)
             this.writeULEB128(local.index);
         else
             this.writeULEB128(local.index + local.func.parameters.length)

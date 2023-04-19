@@ -4,16 +4,30 @@ import { SpiderMemory } from "./SpiderMemory";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderNumberType } from "./enums";
 
+/** A data buffer which can be copied into memory, defined within a module. */
 export type SpiderData = SpiderDataActive | SpiderDataPassive;
 
+export const enum SpiderDataType {
+    /** Active data is copied to it's target memory on initalization.  */
+    ACTIVE,
+    /** Passive data is not copied to it's target memory on initalization but can be loaded using instructions.  */
+    PASSIVE
+}
+
+/** An {@link SpiderData active} data buffer. */
 export interface SpiderDataActive {
-    readonly active: true;
+    readonly type: SpiderDataType.ACTIVE;
+    /** The memory to copy the contents of the buffer into. */
     memory: SpiderMemory;
+    /** The buffer of bytes to be copied into memory. */
     buffer: ArrayLike<number>;
+    /** The offset within memory to copy the contents of the buffer into. */
     offset: SpiderExpression;
 }
 
+/** A {@link SpiderData passive} data buffer. */
 export interface SpiderDataPassive {
-    readonly active: false;
+    readonly type: SpiderDataType.PASSIVE;
+    /** The buffer of bytes to be copied into memory. */
     buffer: ArrayLike<number>;
 }

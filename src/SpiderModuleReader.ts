@@ -11,24 +11,40 @@ import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 import { SpiderTypeDefinition } from "./SpiderType";
 import { WASM_FUNCTYPE, WASM_MAGIC, WASM_VERSION } from "./consts";
 import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderReferenceType, SpiderValueType, WasmBlockOpcode, WasmSectionType } from "./enums";
-import { SpiderData } from "./SpiderData";
+import { SpiderData, SpiderDataType } from "./SpiderData";
 import { SpiderInstruction } from "./SpiderInstruction";
 import { OPCODE_MAP } from "./SpiderOpcode";
+import { SpiderLocal } from "./SpiderLocalReference";
+
+export interface SpiderReadConfig {
+    /**
+     * When true, instructions are created with {@link SpiderLocalReference local references} instead of local indices.
+     * Defaults to true.
+     * See {@link SpiderLocalReference}.
+     */
+    readonly referenceLocals: boolean;
+}
 
 export class SpiderModuleReader extends BinaryReader {
     public static readonly TEXT_DECODER = new TextDecoder();
 
     public module: SpiderModule | null;
+    public readonly config: SpiderReadConfig;
 
+    private _function: SpiderFunctionDefinition | null;
     private _functionImports: SpiderImportFunction[] | null;
     private _globalImports: SpiderImportGlobal[] | null;
     private _memoryImports: SpiderImportMemory[] | null;
     private _tableImports: SpiderImportTable[] | null;
     private _dataRefs: {}[] | null;
 
-    public constructor(buffer: Uint8Array) {
+    public constructor(buffer: Uint8Array, config: Partial<SpiderReadConfig>) {
         super(buffer);
+        this.config = {
+            referenceLocals: config.referenceLocals ?? true
+        }
         this.module = null;
+        this._function = null;
         this._functionImports = null;
         this._globalImports = null;
         this._memoryImports = null;
@@ -332,6 +348,7 @@ export class SpiderModuleReader extends BinaryReader {
             if (this.readULEB128() !== spiderModule.functions.length)
                 throw new Error("Code section must have the same number of parts as the functions section.");
             for (const func of spiderModule.functions) {
+                this._function = func;
                 this.readULEB128();
 
                 const localCount = this.readULEB128();
@@ -342,10 +359,11 @@ export class SpiderModuleReader extends BinaryReader {
                     for (let k = 0; k < repetitionCount; k++)
                         locals.push(type);
                 }
-                const expr = this.readExpression();
                 func.spliceLocalVariables(0, 0, ...locals);
+                const expr = this.readExpression();
                 func.body = expr.expr;
             }
+            this._function = null;
 
             nextSection = this.readUint8();
             readCustomSections(SpiderCustomSectionPosition.AFTER_CODE);
@@ -364,9 +382,9 @@ export class SpiderModuleReader extends BinaryReader {
 
             for (const data of this._dataRefs as any[]) {
                 const flags = this.readUint8();
-                data.active = !(flags & (1 << 0));
+                data.type = (flags & (1 << 0)) ? SpiderDataType.PASSIVE : SpiderDataType.ACTIVE;
 
-                if (data.active) {
+                if (data.type === SpiderDataType.ACTIVE) {
                     if (flags & (1 << 1)) {
                         data.memory = this.readMemoryIndex();
                     } else {
@@ -430,6 +448,20 @@ export class SpiderModuleReader extends BinaryReader {
         }
 
         return { expr: new SpiderExpression(instructions), end: primaryOpcode, type: type as T extends true ? SpiderValueType : undefined };
+    }
+
+    public readLocalIndex(): SpiderLocal {
+        let ref: SpiderLocal = this.readULEB128();
+        if (this.config.referenceLocals) {
+            if (!this._function) throw new Error("Not currently reading a function.");
+            const paramCount = this._function.type.parameters.length;
+            if (ref > paramCount) {
+                ref = this._function.getLocalVariable(ref - paramCount);
+            } else {
+                ref = this._function.getParameter(ref);
+            }
+        }
+        return ref;
     }
 
     public readTypeIndex(): SpiderTypeDefinition {

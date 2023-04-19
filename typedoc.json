@@ -1,0 +1,9 @@
+{
+    // "cleanOutputDir": false,
+    "githubPages": true,
+    "name": "WASM Spider",
+    "out": "docs",
+    "preserveWatchOutput": true,
+    "sourceLinkTemplate": "https://github.com/tacodiva/wasm-spider/blob/dev/{path}#L{line}",
+    "customCss": "./docs/style.css"
+}

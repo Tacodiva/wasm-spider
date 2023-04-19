@@ -1,4 +1,4 @@
-import { SpiderExpression, SpiderElement, SpiderModule, SpiderNumberType, SpiderOpcodes, SpiderReferenceType, SpiderTable, spider } from "../../src";
+import { SpiderExpression, SpiderElement, SpiderModule, SpiderNumberType, SpiderOpcodes, SpiderReferenceType, SpiderTable, createModule, writeModule } from "../../src";
 import { createAdd, createSub } from "./common";
 import fs from 'fs';
 
@@ -17,7 +17,7 @@ describe('Spider', () => {
             }
 
             test("element_passive_func_idx", async () => {
-                const spiderModule = spider.createModule();
+                const spiderModule = createModule();
                 const addFunction = createAdd(spiderModule);
                 const subtractFunction = createSub(spiderModule);
 
@@ -28,7 +28,7 @@ describe('Spider', () => {
                 const element = spiderModule.createElementFuncIdxInactive([addFunction, subtractFunction]);
                 createInitTable(spiderModule, element, table);
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/element_passive_func_idx.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
                 const moduleInstance = await WebAssembly.instantiate(compiledModule, { test: { table: new WebAssembly.Table({ element: "externref", initial: 1 }, [{}]) } });
@@ -78,7 +78,7 @@ describe('Spider', () => {
             }
 
             test("element_active_func_expr", async () => {
-                const spiderModule = spider.createModule();
+                const spiderModule = createModule();
                 const addFunction = createAdd(spiderModule);
                 const subtractFunction = createSub(spiderModule);
 
@@ -92,7 +92,7 @@ describe('Spider', () => {
                 ]);
                 createShuffle(spiderModule, table);
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/element_active_func_expr.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
                 const moduleInstance = await WebAssembly.instantiate(compiledModule);
@@ -101,7 +101,7 @@ describe('Spider', () => {
             });
 
             test("element_passive_func_expr", async () => {
-                const spiderModule = spider.createModule();
+                const spiderModule = createModule();
                 const addFunction = createAdd(spiderModule);
                 const subtractFunction = createSub(spiderModule);
 
@@ -115,7 +115,7 @@ describe('Spider', () => {
                 createShuffle(spiderModule, table);
 
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/element_passive_func_expr.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
                 const tableInst = new WebAssembly.Table({ element: "anyfunc", initial: 3 });

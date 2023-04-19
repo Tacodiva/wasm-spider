@@ -1,4 +1,4 @@
-import { SpiderImportTable, SpiderModule, SpiderTable, SpiderOpcodes, SpiderValueType, spider, SpiderNumberType, SpiderReferenceType } from "../../src";
+import { SpiderImportTable, SpiderModule, SpiderTable, SpiderOpcodes, SpiderValueType, createModule, writeModule, SpiderNumberType, SpiderReferenceType } from "../../src";
 import fs from 'fs';
 import { createAdd, createSub } from "./common";
 
@@ -24,14 +24,14 @@ describe('Spider', () => {
             }
 
             test('table_export_funcref', async () => {
-                const spiderModule = spider.createModule();
+                const spiderModule = createModule();
 
                 const table = spiderModule.createTable(SpiderReferenceType.funcref, 2);
                 spiderModule.exportTable("table", table);
 
                 createMultifunc(spiderModule, table);
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/table_export_funcref.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
                 const moduleInstance = await WebAssembly.instantiate(compiledModule, {});
@@ -43,12 +43,12 @@ describe('Spider', () => {
             });
 
             test('table_import_funcref', async () => {
-                const spiderModule = spider.createModule();
+                const spiderModule = createModule();
 
                 const table = spiderModule.importTable("test", "table", SpiderReferenceType.funcref, 2);
                 createMultifunc(spiderModule, table);
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/table_import_funcref.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
 
@@ -65,7 +65,7 @@ describe('Spider', () => {
             });
 
             test('table_export_externref', async () => {
-                const spiderModule = spider.createModule();
+                const spiderModule = createModule();
 
                 spiderModule.importTable("test", "dummy", SpiderReferenceType.funcref, 0);
 
@@ -82,7 +82,7 @@ describe('Spider', () => {
                 shuffle.body.emit(SpiderOpcodes.table_set, table);
                 spiderModule.exportFunction("shuffle", shuffle);
 
-                const moduleBuffer = spider.writeModule(spiderModule);
+                const moduleBuffer = writeModule(spiderModule);
                 fs.writeFileSync("tests/bin/table_export_externref.wasm", moduleBuffer);
                 const compiledModule = await WebAssembly.compile(moduleBuffer);
 
