@@ -354,10 +354,20 @@ export class SpiderModuleWriter extends BinaryWriter {
             for (const func of module.functions) {
                 codeWriter.reset();
 
-                codeWriter.writeULEB128(func.localVariables.length);
                 if (func.localVariables.length !== 0) {
-                    let varCount = 1;
+                    let entryCount = 1;
                     let varType = func.localVariables[0];
+                    for (let i = 1; i < func.localVariables.length; i++) {
+                        const local = func.localVariables[i];
+                        if (local !== varType) {
+                            varType = local;
+                            ++entryCount;
+                        }
+                    }
+                    codeWriter.writeULEB128(entryCount);
+
+                    let varCount = 1;
+                    varType = func.localVariables[0];
                     for (let i = 1; i < func.localVariables.length; i++) {
                         if (func.localVariables[i] !== varType) {
                             codeWriter.writeULEB128(varCount);
@@ -370,6 +380,8 @@ export class SpiderModuleWriter extends BinaryWriter {
                     }
                     codeWriter.writeULEB128(varCount);
                     codeWriter.writeUint8(varType);
+                } else {
+                    codeWriter.writeULEB128(0);
                 }
 
                 codeWriter.writeExpression(func.body);

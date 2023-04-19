@@ -17,8 +17,10 @@ describe('Spider', () => {
 
                     if (exact)
                         expect(wasmInput.buffer).toStrictEqual(wasmOutput.buffer);
-                    else
+                    else {
+                        expect(spider.readModule(wasmOutput)).toEqual(spiderModule);
                         expect(await WebAssembly.compile(wasmOutput));
+                    }
                 });
             }
         });

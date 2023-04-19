@@ -10,7 +10,7 @@ import { SpiderModule } from "./SpiderModule";
 import { SpiderTable, SpiderTableDefinition } from "./SpiderTable";
 import { SpiderTypeDefinition } from "./SpiderType";
 import { WASM_FUNCTYPE, WASM_MAGIC, WASM_VERSION } from "./consts";
-import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderValueType, WasmBlockOpcode, WasmSectionType } from "./enums";
+import { SpiderCustomSectionPosition, SpiderExportType, SpiderImportType, SpiderReferenceType, SpiderValueType, WasmBlockOpcode, WasmSectionType } from "./enums";
 import { SpiderData } from "./SpiderData";
 import { SpiderInstruction } from "./SpiderInstruction";
 import { OPCODE_MAP } from "./SpiderOpcode";
@@ -282,7 +282,8 @@ export class SpiderModuleReader extends BinaryReader {
                         element.table = this._tableImports.length === 0 ? spiderModule.tables[0] : this._tableImports[0];
                         if (!element.table) throw new Error("No table at index 0.");
                         element.offset = this.readExpression().expr;
-                        element.kind = SpiderElementKind.FUNCTIONS;
+                        if (isExpr) element.expressionType = SpiderReferenceType.funcref;
+                        else element.kind = SpiderElementKind.FUNCTIONS;
                     }
                 } else {
                     if (flags & (1 << 1)) element.mode = SpiderElementMode.DECLARATIVE;

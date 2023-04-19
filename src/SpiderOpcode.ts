@@ -156,7 +156,7 @@ export const SpiderOpcodes = {
     }, r => {
         const length = r.readULEB128();
         const types = new Array(length);
-        for (let i = 0; i < length; i++) types.push(r.readUint8());
+        for (let i = 0; i < length; i++) types[i] = r.readUint8();
         return [types];
     }]),
 
