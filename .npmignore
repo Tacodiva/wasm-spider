@@ -1,0 +1,8 @@
+tests
+docs
+.github
+.vscode
+src
+
+*.ts
+!*.d.ts

@@ -4,6 +4,10 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@500;600&family=Source+Serif+Pro&display=swap');
 
+.tsd-page-title {
+    display: none;
+}
+
 .tsd-navigation {
     padding-top: 0.33rem;
 }

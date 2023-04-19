@@ -1,11 +1,23 @@
 {
   "name": "wasm-spider",
-  "author": "",
+  "author": "Tacodiva",
   "version": "1.0.0",
-  "description": "",
+  "description": "WASM Spider is a fluent Typescript / Javascript library for creating and manipulating WebAssembly modules",
   "keywords": [
-    ""
+    "wasm",
+    "webassembly",
+    "typescript",
+    "parser"
   ],
+  "homepage": "https://emberj.sh/wasm-spider/",
+  "bugs": {
+    "url": "https://github.com/Tacodiva/wasm-spider/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Tacodiva/wasm-spider.git"
+  },
+
   "license": "MIT",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.mjs",
