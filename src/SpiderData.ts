@@ -4,9 +4,10 @@ import { SpiderMemory } from "./SpiderMemory";
 import { SpiderModule } from "./SpiderModule";
 import { SpiderNumberType } from "./enums";
 
-/** A data buffer which can be copied into memory, defined within a module. */
+/** A data buffer which can be copied into {@link SpiderMemory memory}, defined within a module. */
 export type SpiderData = SpiderDataActive | SpiderDataPassive;
 
+/** The mode of operation of {@link SpiderData data}. */
 export const enum SpiderDataType {
     /** Active data is copied to it's target memory on initalization.  */
     ACTIVE,

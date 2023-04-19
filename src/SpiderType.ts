@@ -2,10 +2,10 @@ import { MutableLocalParameterReference, SpiderLocalParameterReference, SpiderLo
 import { SpiderModule } from "./SpiderModule";
 import { SpiderValueType } from "./enums";
 
-/** A function signature. */
+/** The signature of a function. */
 export type SpiderType = SpiderTypeDefinition;
 
-/** A function signature. */
+/** The signature of a function. */
 export class SpiderTypeDefinition {
     public readonly module: SpiderModule;
 

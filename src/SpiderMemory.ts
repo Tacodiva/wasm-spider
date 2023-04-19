@@ -8,7 +8,9 @@ export type SpiderMemory = SpiderMemoryDefinition | SpiderImportMemory | 0;
 export class SpiderMemoryDefinition {
     public readonly module: SpiderModule;
 
+    /** The minimum number of pages this memory can have. */
     public minSize: number;
+    /** The maximum number of pages this memory can be grown to. */
     public maxSize: number | undefined;
 
     /** @hidden */

@@ -229,8 +229,8 @@ export class SpiderModule {
 
     /**
      * Import a memory from an external module.
-     * @param module The name of the module to import the global from.
-     * @param name The name of the global within the module to import.
+     * @param module The name of the module to import the memory from.
+     * @param name The name of the memoery within the module to import.
      * @param minSize The minimum number of pages the imported memory can have. 0 by default.
      * @param maxSize The optional maximum number of pages the imported memory can be grown to.
      * @returns The created import entry.
@@ -267,8 +267,8 @@ export class SpiderModule {
 
     /**
      * Import a table from an external module.
-     * @param module The name of the module to import the global from.
-     * @param name The name of the global within the module to import.
+     * @param module The name of the module to import the table from.
+     * @param name The name of the table within the module to import.
      * @param type The type of reference contained in the imported table.
      * @param minSize The minimum number of entries in the imported table.
      * @param maxSize The optional maximum number of entries the imported table can be grown to.

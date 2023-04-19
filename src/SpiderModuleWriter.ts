@@ -15,7 +15,7 @@ import { WASM_FUNCTYPE, WASM_MAGIC, WASM_RESULT_TYPE_VOID, WASM_VERSION } from "
 
 export interface SpiderWriteConfig {
     /**
-     * When true, identical {@link SpiderType types} are merged into one type to make the outputted binary smaller.
+     * When true, identical {@link SpiderType types} are merged into one type to make the binary smaller.
      * Defaults to true.
      */
     readonly mergeTypes: boolean;

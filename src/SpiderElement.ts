@@ -3,6 +3,7 @@ import { SpiderFunction } from "./SpiderFunction";
 import { SpiderTable } from "./SpiderTable";
 import { SpiderReferenceType } from "./enums";
 
+/** The type of entry stored in an {@link SpiderElement element}. */
 export const enum SpiderElementContentType {
     /** This element uses element type and element expressions to represent its contents. */
     EXPR,
@@ -10,6 +11,7 @@ export const enum SpiderElementContentType {
     IDX
 }
 
+/** The mode of an {@link SpiderElement element}. */
 export const enum SpiderElementMode {
     /** Active elements are copied to their target table on initalization.  */
     ACTIVE,
@@ -19,7 +21,7 @@ export const enum SpiderElementMode {
     DECLARATIVE
 }
 
-/** The type of indices stored in an element. */
+/** The type of indices stored in an {@link SpiderElement element}. */
 export const enum SpiderElementKind {
     /** This element contains function indices.  */
     FUNCTIONS = 0x00
@@ -35,7 +37,7 @@ interface SpiderElementBase {
     init: any[];
 }
 
-/** Properties shared by all expression content type elements. */
+/** Properties shared by all expression content type {@link SpiderElement elements}. */
 export interface SpiderElementExpr extends SpiderElementBase {
     readonly contentType: SpiderElementContentType.EXPR;
     /** The reference type returned by the expressions. */
@@ -79,7 +81,7 @@ export type SpiderElementExprActive = SpiderElementExpr & SpiderElementActive;
 /** A {@link SpiderElementMode passive} or {@link SpiderElementMode declarative} element containing expressions. */
 export type SpiderElementExprInactive = SpiderElementExpr & SpiderElementInactive;
 
-/** A list of references which can be copied into a table defined within a module. */
+/** A list of references which can be copied into a table. Elements are to tables what {@link SpiderData data} is to memory. */
 export type SpiderElement = 
     SpiderElementFuncIdxActive |
     SpiderElementFuncIdxInactive | 

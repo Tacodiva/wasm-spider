@@ -16,9 +16,9 @@ export type SpiderLocal = number | SpiderLocalReference;
 /**
  * A local reference points to a local variable or parameter without having to specify the index. They are handy
  * when doing something like adding a parameter to an existing function. Adding the new parameter will cause all
- * the indices the local variables to increase by one, meaning if the instructions used indexes they would all now
- * point to the wrong local variable. References get automatically updated when a new parameter is added so they
- * always refer to the same local variable.
+ * the local variables indices to increase by one, meaning if any instructions in the body of the function used
+ * indexes, they would all now point to the wrong local variable. References get automatically updated when a new
+ * parameter is added or removed, so they always refer to the right local variable.
  */
 export type SpiderLocalReference = SpiderLocalParameterReference | SpiderLocalVariableReference;
 
