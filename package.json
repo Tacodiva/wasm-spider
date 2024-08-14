@@ -25,7 +25,7 @@
   "esnext": "dist/esm/index.mjs",
   "scripts": {
     "build": "rollup -c",
-    "test": "jest --runInBand",
+    "test": "jest --silent=false --runInBand ",
     "docs": "typedoc --out docs/public src/index.ts --tsconfig tsconfig.npm.json"
   },
   "devDependencies": {

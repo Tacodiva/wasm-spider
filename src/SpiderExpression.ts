@@ -50,19 +50,19 @@ export class SpiderExpression {
      * @param value The argument of the const instruction to be emitted.
      * @see {@link emit}
      */
-    public emitConstant(type: SpiderNumberType, value: number) {
+    public emitConstant(type: SpiderNumberType, value: number | bigint) {
         switch (type) {
             case SpiderNumberType.i32:
-                this.emit(SpiderOpcodes.i32_const, value);
+                this.emit(SpiderOpcodes.i32_const, Number(value));
                 break;
             case SpiderNumberType.i64:
                 this.emit(SpiderOpcodes.i64_const, value);
                 break;
             case SpiderNumberType.f32:
-                this.emit(SpiderOpcodes.f32_const, value);
+                this.emit(SpiderOpcodes.f32_const, Number(value));
                 break;
             case SpiderNumberType.f64:
-                this.emit(SpiderOpcodes.f64_const, value);
+                this.emit(SpiderOpcodes.f64_const, Number(value));
                 break;
             default: throw new TypeError();
         }

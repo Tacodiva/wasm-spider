@@ -46,15 +46,15 @@ function opcodeSecondaryArgs<T extends any[]>(primaryOpcode: number, secondaryOp
 
 const serializeMemarg: OpcodeBinarySerializer<[align: number, offset: number]> = [
     (w: SpiderModuleWriter, align: number, offset: number) => {
-        w.writeULEB128(align);
-        w.writeULEB128(offset);
+        w.writeULEB128Int32(align);
+        w.writeULEB128Int32(offset);
     },
-    (r: SpiderModuleReader) => [r.readULEB128(), r.readULEB128()]
+    (r: SpiderModuleReader) => [r.readULEB128Int32(), r.readULEB128Int32()]
 ];
 
 const serializeULEB128: OpcodeBinarySerializer<[number]> = [
-    (w, n) => w.writeULEB128(n),
-    (r) => [r.readULEB128()]
+    (w, n) => w.writeULEB128Int32(n),
+    (r) => [r.readULEB128Int32()]
 ]
 
 const serializeLocalIndex: OpcodeBinarySerializer<[localindex: SpiderLocal]> = [
@@ -74,10 +74,10 @@ const serializeMemory: OpcodeBinarySerializer<[mem: SpiderMemory]> = [
 
 const serializeMemargLane: OpcodeBinarySerializer<[align: number, offset: number, lane: number]> = [
     (w, align, offset, lane) => {
-        w.writeULEB128(align);
-        w.writeULEB128(offset);
+        w.writeULEB128Int32(align);
+        w.writeULEB128Int32(offset);
         w.writeUint8(lane);
-    }, r => [r.readULEB128(), r.readULEB128(), r.readUint8()]
+    }, r => [r.readULEB128Int32(), r.readULEB128Int32(), r.readUint8()]
 ];
 
 const serializeByte: OpcodeBinarySerializer<[number]> = [
@@ -123,15 +123,15 @@ export const SpiderOpcodes = {
     br: opcodeSimpleArgs<[labelidx: number]>(0x0C, serializeULEB128),
     br_if: opcodeSimpleArgs<[labelidx: number]>(0x0D, serializeULEB128),
     br_table: opcodeSimpleArgs<[labels: number[], defaultLabel: number]>(0x0E, [(w, labels, defaultLabel) => {
-        w.writeULEB128(labels.length);
-        for (const label of labels) w.writeULEB128(label);
-        w.writeULEB128(defaultLabel);
+        w.writeULEB128Int32(labels.length);
+        for (const label of labels) w.writeULEB128Int32(label);
+        w.writeULEB128Int32(defaultLabel);
     }, r => {
-        const length = r.readULEB128();
+        const length = r.readULEB128Int32();
         const labels = new Array(length);
         for (let i = 0; i < length; i++)
-            labels[i] = r.readULEB128();
-        return [labels, r.readULEB128()];
+            labels[i] = r.readULEB128Int32();
+        return [labels, r.readULEB128Int32()];
     }]),
     return: opcodeSimple(0x0f),
     call: opcodeSimpleArgs<[func: SpiderFunction]>(0x10, [(w, func) => w.writeFunctionIndex(func), r => [r.readFunctionIndex()]]),
@@ -152,10 +152,10 @@ export const SpiderOpcodes = {
     drop: opcodeSimple(0x1a),
     select: opcodeSimple(0x1b),
     select_t: opcodeSimpleArgs<[types: SpiderValueType[]]>(0x1c, [(w, types) => {
-        w.writeULEB128(types.length);
+        w.writeULEB128Int32(types.length);
         for (const type of types) w.writeUint8(type);
     }, r => {
-        const length = r.readULEB128();
+        const length = r.readULEB128Int32();
         const types = new Array(length);
         for (let i = 0; i < length; i++) types[i] = r.readUint8();
         return [types];
@@ -228,8 +228,8 @@ export const SpiderOpcodes = {
     memory_fill: opcodeSecondaryArgs<[mem: SpiderMemory]>(0xfc, 11, serializeMemory),
 
     // Numeric Instructions
-    i32_const: opcodeSimpleArgs<[n: number]>(0x41, [(w, n) => w.writeSLEB128(n), r => [r.readSLEB128()]]),
-    i64_const: opcodeSimpleArgs<[n: number]>(0x42, [(w, n) => w.writeSLEB128(n), r => [r.readSLEB128()]]),
+    i32_const: opcodeSimpleArgs<[n: number]>(0x41, [(w, n) => w.writeSLEB128Int32(n), r => [r.readSLEB128Int32()]]),
+    i64_const: opcodeSimpleArgs<[n: number | bigint]>(0x42, [(w, n) => w.writeSLEB128Int64(n), r => [r.readSLEB128Int64()]]),
     f32_const: opcodeSimpleArgs<[z: number]>(0x43, [(w, z) => w.writeFloat32(z), r => [r.readFloat32()]]),
     f64_const: opcodeSimpleArgs<[z: number]>(0x44, [(w, z) => w.writeFloat64(z), r => [r.readFloat64()]]),
 

@@ -83,16 +83,27 @@ export class BinaryWriter {
         this.position += 4;
     }
 
-    public writeULEB128(value: number) {
+    public writeULEB128Int32(value: number) {
         do {
             let byte = value & 0x7f;
             value >>>= 7;
+
             if (value !== 0) byte |= 0x80;
             this.writeUint8(byte);
         } while (value !== 0);
     }
 
-    public writeSLEB128(value: number) {
+    public writeULEB128Int64(value: bigint | number) {
+        if (typeof value === "number") value = BigInt(value);
+        do {
+            let byte = Number(value & 0x7fn);
+            value >>= 7n;
+            if (value !== 0n) byte |= 0x80;
+            this.writeUint8(byte);
+        } while (value !== 0n);
+    }
+
+    public writeSLEB128Int32(value: number) {
         let more = true;
 
         while (more) {
@@ -100,6 +111,25 @@ export class BinaryWriter {
             value >>= 7;
 
             if ((value === 0 && (byte & 0x40) === 0) || (value === -1 && (byte & 0x40) !== 0)) {
+                more = false;
+            } else {
+                byte |= 0x80;
+            }
+
+            this.writeUint8(byte);
+        }
+    }
+
+    public writeSLEB128Int64(value: bigint | number) {
+        if (typeof value === "number") value = BigInt(value);
+
+        let more = true;
+
+        while (more) {
+            let byte = Number(value & 0x7fn);
+            value >>= 7n;
+
+            if ((value === 0n && (byte & 0x40) === 0) || (value === -1n && (byte & 0x40) !== 0)) {
                 more = false;
             } else {
                 byte |= 0x80;

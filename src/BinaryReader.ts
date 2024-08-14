@@ -63,7 +63,15 @@ export class BinaryReader {
         return val;
     }
 
-    public readULEB128() {
+    private _tryConvertToNumber(value: bigint) : bigint | number {
+        if (value <= Number.MAX_SAFE_INTEGER && value >= Number.MIN_SAFE_INTEGER) {
+            return Number(value);
+        } else {
+            return value;
+        }
+    }
+
+    public readULEB128Int32(): number {
         let result = 0;
         let shift = 0;
         let byte;
@@ -77,10 +85,24 @@ export class BinaryReader {
         return result;
     }
 
-    public readSLEB128(): number {
+    public readULEB128Int64(): bigint | number {
+        let result = 0n;
+        let shift = 0n;
+        let byte: number;
+
+        do {
+            byte = this.buffer[this.position++];;
+            result |= BigInt(byte & 0x7f) << shift;
+            shift += 7n;
+        } while (byte & 0x80);
+
+        return this._tryConvertToNumber(result);
+    }
+
+    public readSLEB128Int32(): number {
         let result = 0;
         let shift = 0;
-        let byte;
+        let byte: number;
 
         do {
             byte = this.buffer[this.position++];;
@@ -93,6 +115,24 @@ export class BinaryReader {
         }
 
         return result;
+    }
+
+    public readSLEB128Int64(): bigint | number {
+        let result = 0n;
+        let shift = 0n;
+        let byte;
+
+        do {
+            byte = this.buffer[this.position++];;
+            result |= BigInt(byte & 0x7f) << shift;
+            shift += 7n;
+        } while (byte & 0x80);
+
+        if (byte & 0x40) {
+            result += - (1n << shift);
+        }
+
+        return this._tryConvertToNumber(result);
     }
 
     public readBoolean() {

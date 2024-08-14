@@ -129,7 +129,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         }
 
         const endSection = () => {
-            this.writeULEB128(sectionWriter.position);
+            this.writeULEB128Int32(sectionWriter.position);
             this.write(sectionWriter.toBuffer());
         }
 
@@ -153,15 +153,15 @@ export class SpiderModuleWriter extends BinaryWriter {
             // Write the type section
             beginSection(WasmSectionType.type);
             let types = mergedTypes ?? module.types;
-            sectionWriter.writeULEB128(types.length);
+            sectionWriter.writeULEB128Int32(types.length);
             for (let type of types) {
                 sectionWriter.writeUint8(WASM_FUNCTYPE);
 
-                sectionWriter.writeULEB128(type.parameters.length);
+                sectionWriter.writeULEB128Int32(type.parameters.length);
                 for (const param of type.parameters)
                     sectionWriter.writeUint8(param);
 
-                sectionWriter.writeULEB128(type.results.length);
+                sectionWriter.writeULEB128Int32(type.results.length);
                 for (const result of type.results)
                     sectionWriter.writeUint8(result);
             }
@@ -172,7 +172,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.imports.length !== 0) {
             // Write the imports section
             beginSection(WasmSectionType.import);
-            sectionWriter.writeULEB128(module.imports.length);
+            sectionWriter.writeULEB128Int32(module.imports.length);
             for (const imprt of module.imports) {
                 sectionWriter.writeName(imprt.module);
                 sectionWriter.writeName(imprt.name);
@@ -201,7 +201,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.functions.length !== 0) {
             // Write the function section
             beginSection(WasmSectionType.function);
-            sectionWriter.writeULEB128(module.functions.length);
+            sectionWriter.writeULEB128Int32(module.functions.length);
             for (const func of module.functions)
                 sectionWriter.writeTypeIndex(func.type);
             endSection();
@@ -211,7 +211,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.tables.length !== 0) {
             // Write the table section
             beginSection(WasmSectionType.table);
-            sectionWriter.writeULEB128(module.tables.length);
+            sectionWriter.writeULEB128Int32(module.tables.length);
             for (const table of module.tables) {
                 sectionWriter.writeUint8(table.type);
                 sectionWriter.writeLimits(table.minSize, table.maxSize);
@@ -223,7 +223,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.memories.length !== 0) {
             // Write the memory section
             beginSection(WasmSectionType.memory);
-            sectionWriter.writeULEB128(module.memories.length);
+            sectionWriter.writeULEB128Int32(module.memories.length);
             for (const memory of module.memories) {
                 sectionWriter.writeLimits(memory.minSize, memory.maxSize);
             }
@@ -234,7 +234,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.globals.length !== 0) {
             // Write the global section
             beginSection(WasmSectionType.global);
-            sectionWriter.writeULEB128(module.globals.length);
+            sectionWriter.writeULEB128Int32(module.globals.length);
             for (const global of module.globals) {
                 sectionWriter.writeUint8(global.type);
                 sectionWriter.writeBoolean(global.mutable);
@@ -247,7 +247,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.exports.length !== 0) {
             // Write the export section
             beginSection(WasmSectionType.export);
-            sectionWriter.writeULEB128(module.exports.length);
+            sectionWriter.writeULEB128Int32(module.exports.length);
             for (const exprt of module.exports) {
                 sectionWriter.writeName(exprt.name);
                 sectionWriter.writeUint8(exprt.type);
@@ -281,7 +281,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.elements.length !== 0) {
             // Write the elements section
             beginSection(WasmSectionType.element);
-            sectionWriter.writeULEB128(module.elements.length);
+            sectionWriter.writeULEB128Int32(module.elements.length);
             for (const element of module.elements) {
                 let flags = 0;
                 if (element.contentType === SpiderElementContentType.EXPR) flags |= 1 << 2;
@@ -300,7 +300,7 @@ export class SpiderModuleWriter extends BinaryWriter {
                     sectionWriter.writeUint8(flags);
 
                     if (!firstFuncrefTable) {
-                        sectionWriter.writeULEB128(tableidx); // x:tableidx
+                        sectionWriter.writeULEB128Int32(tableidx); // x:tableidx
                         sectionWriter.writeExpression(element.offset); // e:expr
                         if (element.contentType === SpiderElementContentType.EXPR) {
                             sectionWriter.writeUint8(element.expressionType); // et:reftype
@@ -323,7 +323,7 @@ export class SpiderModuleWriter extends BinaryWriter {
                     }
                 }
 
-                sectionWriter.writeULEB128(element.init.length);
+                sectionWriter.writeULEB128Int32(element.init.length);
 
                 if (element.contentType === SpiderElementContentType.EXPR) {
                     for (const expr of element.init)
@@ -343,7 +343,7 @@ export class SpiderModuleWriter extends BinaryWriter {
 
         if (module.data.length !== 0) {
             beginSection(WasmSectionType.dataCount);
-            sectionWriter.writeULEB128(module.data.length);
+            sectionWriter.writeULEB128Int32(module.data.length);
             endSection();
         }
         writeCustomSections(SpiderCustomSectionPosition.AFTER_DATA_COUNT);
@@ -354,7 +354,7 @@ export class SpiderModuleWriter extends BinaryWriter {
 
             const codeWriter = new SpiderModuleWriter(this.config, this);
 
-            sectionWriter.writeULEB128(module.functions.length);
+            sectionWriter.writeULEB128Int32(module.functions.length);
             for (const func of module.functions) {
                 codeWriter.reset();
 
@@ -368,13 +368,13 @@ export class SpiderModuleWriter extends BinaryWriter {
                             ++entryCount;
                         }
                     }
-                    codeWriter.writeULEB128(entryCount);
+                    codeWriter.writeULEB128Int32(entryCount);
 
                     let varCount = 1;
                     varType = func.localVariables[0];
                     for (let i = 1; i < func.localVariables.length; i++) {
                         if (func.localVariables[i] !== varType) {
-                            codeWriter.writeULEB128(varCount);
+                            codeWriter.writeULEB128Int32(varCount);
                             codeWriter.writeUint8(varType);
                             varType = func.localVariables[i];
                             varCount = 1;
@@ -382,15 +382,15 @@ export class SpiderModuleWriter extends BinaryWriter {
                             ++varCount;
                         }
                     }
-                    codeWriter.writeULEB128(varCount);
+                    codeWriter.writeULEB128Int32(varCount);
                     codeWriter.writeUint8(varType);
                 } else {
-                    codeWriter.writeULEB128(0);
+                    codeWriter.writeULEB128Int32(0);
                 }
 
                 codeWriter.writeExpression(func.body);
 
-                sectionWriter.writeULEB128(codeWriter.position);
+                sectionWriter.writeULEB128Int32(codeWriter.position);
                 sectionWriter.write(codeWriter.toBuffer());
             }
             endSection();
@@ -400,7 +400,7 @@ export class SpiderModuleWriter extends BinaryWriter {
         if (module.data.length !== 0) {
             // Write the data section
             beginSection(WasmSectionType.data);
-            sectionWriter.writeULEB128(module.data.length);
+            sectionWriter.writeULEB128Int32(module.data.length);
             for (const data of module.data) {
                 if (data.type === SpiderDataType.ACTIVE) {
                     const memoryIndex = this.getMemoryIndex(data.memory);
@@ -408,14 +408,14 @@ export class SpiderModuleWriter extends BinaryWriter {
                         sectionWriter.writeUint8(0);
                     } else {
                         sectionWriter.writeUint8(2);
-                        sectionWriter.writeULEB128(memoryIndex);
+                        sectionWriter.writeULEB128Int32(memoryIndex);
                     }
                     sectionWriter.writeExpression(data.offset);
                 } else {
                     sectionWriter.writeUint8(1);
                 }
 
-                sectionWriter.writeULEB128(data.buffer.length);
+                sectionWriter.writeULEB128Int32(data.buffer.length);
                 sectionWriter.write(data.buffer);
             }
             endSection();
@@ -442,33 +442,33 @@ export class SpiderModuleWriter extends BinaryWriter {
             throw new Error("Not currently writing a module");
         this.writeUint8(inst.opcode.primaryOpcode);
         if (inst.opcode.secondaryOpcode !== undefined)
-            this.writeULEB128(inst.opcode.secondaryOpcode)
+            this.writeULEB128Int32(inst.opcode.secondaryOpcode)
         if (inst.opcode.binarySerializer) inst.opcode.binarySerializer[0](this, ...inst.args);
     }
 
     public writeName(value: string) {
         const encoded = SpiderModuleWriter.TEXT_ENCODER.encode(value);
-        this.writeULEB128(encoded.byteLength);
+        this.writeULEB128Int32(encoded.byteLength);
         this.write(encoded);
     }
 
     public writeLimits(min: number, max?: number) {
         this.writeBoolean(max !== undefined);
-        this.writeULEB128(min);
-        if (max !== undefined) this.writeULEB128(max);
+        this.writeULEB128Int32(min);
+        if (max !== undefined) this.writeULEB128Int32(max);
     }
 
     public writeLocalIndex(local: SpiderLocal) {
         if (typeof local === "number")
-            this.writeULEB128(local);
+            this.writeULEB128Int32(local);
         else if (local.refType === SpiderLocalReferenceType.PARAM)
-            this.writeULEB128(local.index);
+            this.writeULEB128Int32(local.index);
         else
-            this.writeULEB128(local.index + local.func.parameters.length)
+            this.writeULEB128Int32(local.index + local.func.parameters.length)
     }
 
     public writeFunctionIndex(func: SpiderFunction) {
-        this.writeULEB128(this.getFunctionIndex(func));
+        this.writeULEB128Int32(this.getFunctionIndex(func));
     }
 
     public getFunctionIndex(func: SpiderFunction): number {
@@ -479,7 +479,7 @@ export class SpiderModuleWriter extends BinaryWriter {
     }
 
     public writeTypeIndex(type: SpiderType) {
-        this.writeULEB128(this.getTypeIndex(type));
+        this.writeULEB128Int32(this.getTypeIndex(type));
     }
 
     public getTypeIndex(type: SpiderType): number {
@@ -490,7 +490,7 @@ export class SpiderModuleWriter extends BinaryWriter {
     }
 
     public writeGlobalIndex(global: SpiderGlobal) {
-        this.writeULEB128(this.getGlobalIndex(global));
+        this.writeULEB128Int32(this.getGlobalIndex(global));
     }
 
     public getGlobalIndex(global: SpiderGlobal): number {
@@ -501,7 +501,7 @@ export class SpiderModuleWriter extends BinaryWriter {
     }
 
     public writeMemoryIndex(memory?: SpiderMemory) {
-        this.writeULEB128(this.getMemoryIndex(memory));
+        this.writeULEB128Int32(this.getMemoryIndex(memory));
     }
 
     public getMemoryIndex(memory?: SpiderMemory): number {
@@ -513,7 +513,7 @@ export class SpiderModuleWriter extends BinaryWriter {
     }
 
     public writeTableIndex(table: SpiderTable) {
-        this.writeULEB128(this.getTableIndex(table));
+        this.writeULEB128Int32(this.getTableIndex(table));
     }
 
     public getTableIndex(table: SpiderTable): number {
@@ -524,7 +524,7 @@ export class SpiderModuleWriter extends BinaryWriter {
     }
 
     public writeElementIndex(element: SpiderElement) {
-        this.writeULEB128(this.getElementIndex(element));
+        this.writeULEB128Int32(this.getElementIndex(element));
     }
 
     public getElementIndex(element: SpiderElement): number {
@@ -535,7 +535,7 @@ export class SpiderModuleWriter extends BinaryWriter {
     }
 
     public writeDataIndex(data: SpiderData) {
-        this.writeULEB128(this.getDataIndex(data));
+        this.writeULEB128Int32(this.getDataIndex(data));
     }
 
     public getDataIndex(data: SpiderData): number {

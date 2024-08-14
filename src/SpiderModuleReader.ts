@@ -70,7 +70,7 @@ export class SpiderModuleReader extends BinaryReader {
             const sections: SpiderCustomSection[] = [];
             spiderModule.customSections[position] = sections;
             while (nextSection === WasmSectionType.custom) {
-                const length = this.readULEB128();
+                const length = this.readULEB128Int32();
                 const dataStart = this.position;
                 const name = this.readName();
                 sections.push(new SpiderCustomSectionDefinition(spiderModule, name, this.buffer.slice(this.position, dataStart + length)));
@@ -84,18 +84,18 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.type) {
             // Read the type section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++) {
                 if (this.readUint8() !== WASM_FUNCTYPE)
                     throw new Error("Expected functype 96.");
 
-                const paramCount = this.readULEB128();
+                const paramCount = this.readULEB128Int32();
                 const params = [];
                 for (let j = 0; j < paramCount; j++)
                     params.push(this.readUint8());
 
-                const resultCount = this.readULEB128();
+                const resultCount = this.readULEB128Int32();
                 const results = [];
                 for (let j = 0; j < resultCount; j++)
                     results.push(this.readUint8());
@@ -114,8 +114,8 @@ export class SpiderModuleReader extends BinaryReader {
 
         if (nextSection === WasmSectionType.import) {
             // Read the imports section
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++) {
                 const module = this.readName();
                 const name = this.readName();
@@ -167,8 +167,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.function) {
             // Read the functions section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++)
                 spiderModule.functions.push(new SpiderFunctionDefinition(spiderModule, this.readTypeIndex()));
             nextSection = this.readUint8();
@@ -178,8 +178,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.table) {
             // Read the table section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++) {
                 const type = this.readUint8();
                 const limits = this.readLimits();
@@ -193,8 +193,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.memory) {
             // Read the memory section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++) {
                 const limits = this.readLimits();
                 spiderModule.memories.push(new SpiderMemoryDefinition(spiderModule, limits.min, limits.max));
@@ -207,8 +207,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection == WasmSectionType.global) {
             // Read the global section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++) {
                 const type = this.readUint8();
                 const mutable = this.readBoolean();
@@ -223,8 +223,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.export) {
             // Read the export section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++) {
                 const name = this.readName();
                 const type = this.readUint8();
@@ -263,7 +263,7 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.start) {
             // Read the start section
 
-            this.readULEB128();
+            this.readULEB128Int32();
             spiderModule.start = this.readFunctionIndex();
 
             nextSection = this.readUint8();
@@ -273,8 +273,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.element) {
             // Read the elements section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             for (let i = 0; i < count; i++) {
                 const flags = this.readUint8();
                 // Sometimes I just can't be fucked anymore.
@@ -307,7 +307,7 @@ export class SpiderModuleReader extends BinaryReader {
                     if (isExpr) element.expressionType = this.readUint8();
                     else element.kind = this.readUint8();
                 }
-                const elementCount = this.readULEB128();
+                const elementCount = this.readULEB128Int32();
                 element.init = [];
                 if (isExpr) {
                     for (let j = 0; j < elementCount; j++)
@@ -332,8 +332,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.dataCount) {
             // Read the data count section
 
-            this.readULEB128();
-            dataCount = this.readULEB128();
+            this.readULEB128Int32();
+            dataCount = this.readULEB128Int32();
             for (let i = 0; i < dataCount; i++)
                 this._dataRefs.push({});
 
@@ -344,17 +344,17 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.code) {
             // Read the code section
 
-            this.readULEB128();
-            if (this.readULEB128() !== spiderModule.functions.length)
+            this.readULEB128Int32();
+            if (this.readULEB128Int32() !== spiderModule.functions.length)
                 throw new Error("Code section must have the same number of parts as the functions section.");
             for (const func of spiderModule.functions) {
                 this._function = func;
-                this.readULEB128();
+                this.readULEB128Int32();
 
-                const localCount = this.readULEB128();
+                const localCount = this.readULEB128Int32();
                 const locals = [];
                 for (let j = 0; j < localCount; j++) {
-                    const repetitionCount = this.readULEB128();
+                    const repetitionCount = this.readULEB128Int32();
                     const type = this.readUint8();
                     for (let k = 0; k < repetitionCount; k++)
                         locals.push(type);
@@ -372,8 +372,8 @@ export class SpiderModuleReader extends BinaryReader {
         if (nextSection === WasmSectionType.data) {
             // Read data section
 
-            this.readULEB128();
-            const count = this.readULEB128();
+            this.readULEB128Int32();
+            const count = this.readULEB128Int32();
             if (dataCount === -1) {
                 for (let i = 0; i < count; i++)
                     this._dataRefs.push({});
@@ -393,7 +393,7 @@ export class SpiderModuleReader extends BinaryReader {
                     }
                     data.offset = this.readExpression().expr;
                 }
-                const dataLength = this.readULEB128();
+                const dataLength = this.readULEB128Int32();
                 data.buffer = this.read(dataLength);
 
                 spiderModule.data.push(data as SpiderData);
@@ -414,14 +414,14 @@ export class SpiderModuleReader extends BinaryReader {
     }
 
     public readName() {
-        const length = this.readULEB128();
+        const length = this.readULEB128Int32();
         return SpiderModuleReader.TEXT_DECODER.decode(this.read(length));
     }
 
     public readLimits(): { min: number, max?: number } {
         const hasMax = this.readBoolean();
-        const ret: { min: number, max?: number } = { min: this.readULEB128() };
-        if (hasMax) ret.max = this.readULEB128();
+        const ret: { min: number, max?: number } = { min: this.readULEB128Int32() };
+        if (hasMax) ret.max = this.readULEB128Int32();
         return ret;
     }
 
@@ -436,7 +436,7 @@ export class SpiderModuleReader extends BinaryReader {
             if (!entry) throw new Error(`No such primary opcode 0x${primaryOpcode.toString(16)}`);
             let opcode;
             if (Array.isArray(entry)) {
-                const secondaryOpcode = this.readULEB128();
+                const secondaryOpcode = this.readULEB128Int32();
                 opcode = entry[secondaryOpcode];
                 if (!opcode) throw new Error(`No such secondary opcode 0x${primaryOpcode.toString(16)} -> ${secondaryOpcode}`);
             } else opcode = entry;
@@ -451,7 +451,7 @@ export class SpiderModuleReader extends BinaryReader {
     }
 
     public readLocalIndex(): SpiderLocal {
-        let ref: SpiderLocal = this.readULEB128();
+        let ref: SpiderLocal = this.readULEB128Int32();
         if (this.config.referenceLocals) {
             if (!this._function) throw new Error("Not currently reading a function.");
             const paramCount = this._function.type.parameters.length;
@@ -466,7 +466,7 @@ export class SpiderModuleReader extends BinaryReader {
 
     public readTypeIndex(): SpiderTypeDefinition {
         if (!this.module) throw new Error("Not currently reading a module.");
-        const idx = this.readULEB128();
+        const idx = this.readULEB128Int32();
         const val = this.module.types[idx];
         if (!val) throw new Error(`Invalid type index ${idx}`);
         return val;
@@ -474,7 +474,7 @@ export class SpiderModuleReader extends BinaryReader {
 
     public readElementIndex(): SpiderElement {
         if (!this.module) throw new Error("Not currently reading a module.");
-        const idx = this.readULEB128();
+        const idx = this.readULEB128Int32();
         const val = this.module.elements[idx];
         if (!val) throw new Error(`Invalid element index ${idx}`);
         return val;
@@ -482,7 +482,7 @@ export class SpiderModuleReader extends BinaryReader {
 
     public readDataIndex(): SpiderData {
         if (!this._dataRefs) throw new Error("Data refs have not been assigned. Module possibly missing dataCount section.");
-        const idx = this.readULEB128();
+        const idx = this.readULEB128Int32();
         const val = this._dataRefs[idx];
         if (!val) throw new Error(`Invalid element index ${idx}`);
         return val as SpiderData;
@@ -490,7 +490,7 @@ export class SpiderModuleReader extends BinaryReader {
 
     public readFunctionIndex<T extends boolean | undefined>(rejectImports?: T): T extends true ? SpiderFunctionDefinition : SpiderFunction {
         if (!this._functionImports) throw new Error("Function imports have not been read.");
-        const idx = this.readULEB128();
+        const idx = this.readULEB128Int32();
         let val;
         if (idx < this._functionImports.length) {
             if (rejectImports) throw new Error(`Function index ${idx} illegally refers to an import.`);
@@ -502,7 +502,7 @@ export class SpiderModuleReader extends BinaryReader {
 
     public readGlobalIndex<T extends boolean | undefined>(rejectImports?: T): T extends true ? SpiderGlobalDefinition : SpiderGlobal {
         if (!this._globalImports) throw new Error("Global imports have not been read.");
-        const idx = this.readULEB128();
+        const idx = this.readULEB128Int32();
         let val;
         if (idx < this._globalImports.length) {
             if (rejectImports) throw new Error(`Global index ${idx} illegally refers to an import.`);
@@ -514,7 +514,7 @@ export class SpiderModuleReader extends BinaryReader {
 
     public readMemoryIndex<T extends boolean | undefined>(rejectImports?: T): T extends true ? SpiderMemoryDefinition : SpiderMemory {
         if (!this._memoryImports) throw new Error("Memory imports have not been read.");
-        const idx = this.readULEB128();
+        const idx = this.readULEB128Int32();
         let val;
         if (idx < this._memoryImports.length) {
             if (rejectImports) throw new Error(`Memory index ${idx} illegally refers to an import.`);
@@ -526,7 +526,7 @@ export class SpiderModuleReader extends BinaryReader {
 
     public readTableIndex<T extends boolean | undefined>(rejectImports?: T): T extends true ? SpiderTableDefinition : SpiderTable {
         if (!this._tableImports) throw new Error("Table imports have not been read.");
-        const idx = this.readULEB128();
+        const idx = this.readULEB128Int32();
         let val;
         if (idx < this._tableImports.length) {
             if (rejectImports) throw new Error(`Table index ${idx} illegally refers to an import.`);
