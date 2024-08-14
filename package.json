@@ -1,7 +1,7 @@
 {
   "name": "wasm-spider",
   "author": "Tacodiva",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "WASM Spider is a fluent Typescript / Javascript library for creating and manipulating WebAssembly modules",
   "keywords": [
     "wasm",
