@@ -140,6 +140,12 @@ export const SpiderOpcodes = {
         w.writeTableIndex(table);
     }, r => [r.readTypeIndex(), r.readTableIndex()]
     ]),
+    return_call: opcodeSimpleArgs<[func: SpiderFunction]>(0x12, [(w, func) => w.writeFunctionIndex(func), r => [r.readFunctionIndex()]]),
+    return_call_indirect: opcodeSimpleArgs<[type: SpiderTypeDefinition, table: SpiderTable]>(0x13, [(w, type, table) => {
+        w.writeTypeIndex(type);
+        w.writeTableIndex(table);
+    }, r => [r.readTypeIndex(), r.readTableIndex()]
+    ]),
 
     // Reference Instructions
 
